@@ -31,5 +31,5 @@ The backend handles document loading, semantic search, and legal question answer
 
 ---
 
-## Project Structure
+
 
