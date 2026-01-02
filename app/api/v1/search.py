@@ -1,16 +1,13 @@
 from fastapi import APIRouter
-from app.schemas.search import SearchRequest
-from app.services.rag_service import RAGService
+from app.rag.pipeline import rag_retrieve
 
-router = APIRouter(prefix="/search", tags=["Search"])
+router = APIRouter()
 
-rag = RAGService()
-
-@router.post("/")
-def search(request: SearchRequest):
-    chunk = rag.retrieve(request.query)
+@router.post("/search")
+def search(query: str):
+    documents = rag_retrieve(query)
 
     return {
-        "content": chunk["content"],
-        "source": chunk["source"]
+        "answer": "Generated later",
+        "sources": documents
     }

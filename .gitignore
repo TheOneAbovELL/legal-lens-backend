@@ -3,3 +3,7 @@ venv/
 __pycache__/
 *.pyc
 desktop.ini
+test_qdrant.py
+test_rag.py
+notepad test_qdrant.py
+
