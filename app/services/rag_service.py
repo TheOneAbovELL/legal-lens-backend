@@ -41,7 +41,7 @@ class RAGService:
         return chunk
 
     # ---------- QDRANT RETRIEVAL (PRIMARY) ----------
-        def retrieve_from_qdrant(self, query: str):
+    def retrieve_from_qdrant(self, query: str):
         try:
             # Convert query to embedding
             query_vector = embed_texts([query])[0]
