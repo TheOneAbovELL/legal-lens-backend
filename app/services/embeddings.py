@@ -1,6 +1,11 @@
 from sentence_transformers import SentenceTransformer
 
-_model = SentenceTransformer("all-MiniLM-L6-v2")
+# MUST MATCH QDRANT INGESTION MODEL
+_model = SentenceTransformer("BAAI/bge-m3")
 
-def embed_texts(texts: list[str]):
-    return _model.encode(texts).tolist()
+def embed_texts(texts):
+    embeddings = _model.encode(
+        texts,
+        normalize_embeddings=True
+    )
+    return embeddings.tolist()
