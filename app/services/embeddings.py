@@ -1,10 +1,6 @@
 from sentence_transformers import SentenceTransformer
 
-_model = SentenceTransformer("BAAI/bge-m3")
+_model = SentenceTransformer("all-MiniLM-L6-v2")
 
 def embed_texts(texts: list[str]):
-    embeddings = _model.encode(
-        texts,
-        normalize_embeddings=True
-    )
-    return embeddings.tolist()
+    return _model.encode(texts).tolist()
