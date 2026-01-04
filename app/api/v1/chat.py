@@ -9,8 +9,17 @@ rag = RAGService()
 
 @router.post("/")
 def chat(request: ChatRequest):
-    chunk = rag.retrieve(request.query)
+    # STEP 1: Try retrieving context from Qdrant
+    chunk = rag.retrieve_from_qdrant(request.query)
 
+    # STEP 2: If Qdrant fails or returns nothing, fallback to local file
+    if chunk is None:
+        chunk = rag.retrieve(request.query)
+        source = "local"
+    else:
+        source = "qdrant"
+
+    # STEP 3: Build grounded prompt
     prompt = f"""
 You are a legal assistant.
 Answer the question strictly using the legal context below.
@@ -22,9 +31,11 @@ Question:
 {request.query}
 """
 
+    # STEP 4: Ask LLM
     answer = ask_llm(prompt)
 
+    # STEP 5: Return response (schema unchanged)
     return {
         "answer": answer,
-        "source": chunk["source"]
+        "source": source
     }
