@@ -43,10 +43,8 @@ class RAGService:
     # ---------- QDRANT RETRIEVAL (PRIMARY) ----------
     def retrieve_from_qdrant(self, query: str):
         try:
-            # Convert query to embedding
             query_vector = embed_texts([query])[0]
 
-            # CORRECT QDRANT SEARCH METHOD
             results = self.qdrant.query_points(
                 collection_name=self.collection_name,
                 prefetch=[],
@@ -59,8 +57,8 @@ class RAGService:
 
             texts = []
             for p in results.points:
-                if p.payload and "content" in p.payload:
-                    texts.append(p.payload["content"])
+                if p.payload and "text" in p.payload:
+                    texts.append(p.payload["text"])
 
             if not texts:
                 return None
