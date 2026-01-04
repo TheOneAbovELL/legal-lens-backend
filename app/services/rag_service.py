@@ -41,31 +41,30 @@ class RAGService:
         return chunk
 
     # ---------- QDRANT RETRIEVAL (PRIMARY) ----------
-    def retrieve_from_qdrant(self, query: str):
+        def retrieve_from_qdrant(self, query: str):
         try:
-            # 1. Convert query to embedding
+            # Convert query to embedding
             query_vector = embed_texts([query])[0]
 
-            # 2. SEARCH Qdrant (IMPORTANT: search, not query)
-            results = self.qdrant.search(
+            # CORRECT QDRANT SEARCH METHOD
+            results = self.qdrant.query_points(
                 collection_name=self.collection_name,
-                query_vector=query_vector,
+                prefetch=[],
+                query=query_vector,
                 limit=3
             )
 
-            if not results:
+            if not results or not results.points:
                 return None
 
-            # 3. Extract content from payload
             texts = []
-            for r in results:
-                if r.payload and "content" in r.payload:
-                    texts.append(r.payload["content"])
+            for p in results.points:
+                if p.payload and "content" in p.payload:
+                    texts.append(p.payload["content"])
 
             if not texts:
                 return None
 
-            # 4. Return in SAME format as local retrieve()
             return {
                 "content": "\n\n".join(texts),
                 "source": "qdrant"
