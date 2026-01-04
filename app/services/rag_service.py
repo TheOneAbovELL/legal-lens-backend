@@ -59,8 +59,8 @@ class RAGService:
             # Extract text from payload
             texts = []
             for r in results:
-                if r.payload and "text" in r.payload:
-                    texts.append(r.payload["text"])
+                if r.payload and "content" in r.payload:
+                    texts.append(r.payload["content"])
 
             if not texts:
                 return None
