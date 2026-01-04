@@ -19,7 +19,7 @@ class RAGService:
         # simple in-memory cache
         self.cache = {}
 
-        # ---------- QDRANT SETUP (NEW) ----------
+        # ---------- QDRANT SETUP ----------
         self.qdrant = QdrantClient(
             url=os.getenv("QDRANT_URL"),
             api_key=os.getenv("QDRANT_API_KEY")
@@ -43,11 +43,11 @@ class RAGService:
     # ---------- QDRANT RETRIEVAL (PRIMARY) ----------
     def retrieve_from_qdrant(self, query: str):
         try:
-            # Convert query to embedding
+            # 1. Convert query to embedding
             query_vector = embed_texts([query])[0]
 
-            # Query Qdrant
-            results = self.qdrant.query(
+            # 2. SEARCH Qdrant (IMPORTANT: search, not query)
+            results = self.qdrant.search(
                 collection_name=self.collection_name,
                 query_vector=query_vector,
                 limit=3
@@ -56,7 +56,7 @@ class RAGService:
             if not results:
                 return None
 
-            # Extract text from payload
+            # 3. Extract content from payload
             texts = []
             for r in results:
                 if r.payload and "content" in r.payload:
@@ -65,6 +65,7 @@ class RAGService:
             if not texts:
                 return None
 
+            # 4. Return in SAME format as local retrieve()
             return {
                 "content": "\n\n".join(texts),
                 "source": "qdrant"
