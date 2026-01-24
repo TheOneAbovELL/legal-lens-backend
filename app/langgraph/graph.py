@@ -6,16 +6,35 @@ IPC_TO_BNS = {
     "420": "318",   # Cheating
     "302": "103",   # Murder
 }
+KG_DATA = {
+    "IPC 420": [
+        "Offence: Cheating",
+        "Punishment: Imprisonment up to 7 years and fine",
+        "Nature: Cognizable and non-bailable"
+    ],
+    "IPC 302": [
+        "Offence: Murder",
+        "Punishment: Death or life imprisonment",
+        "Nature: Cognizable and non-bailable"
+    ]
+}
 
 class GraphState(TypedDict):
     query: str
     intent: Optional[str]
     safe: Optional[bool]
+
     keyword_results: Optional[List[Dict]]
     vector_results: Optional[List[Dict]]
     retrieved_docs: Optional[List[Dict]]
+
     ipc_bns_map: Optional[Dict[str, str]]
+
+    kg_context: Optional[List[str]]        
+    fused_context: Optional[str]            
+
     response: Optional[str]
+
 
 
 def intent_detect(state: GraphState) -> GraphState:
@@ -99,14 +118,40 @@ def bns_mapper(state: GraphState) -> GraphState:
     state["ipc_bns_map"] = mapping
     return state
 
+def context_fusion(state: GraphState) -> GraphState:
+    fused_parts = []
+
+    # 1️⃣ Add RAG context
+    if state.get("retrieved_docs"):
+        fused_parts.append("Retrieved Legal Context:")
+        for doc in state["retrieved_docs"]:
+            fused_parts.append(f"- {doc['text']}")
+
+    # 2️⃣ Add KG context based on detected IPC sections
+    kg_facts = []
+    if state.get("ipc_bns_map"):
+        for ipc in state["ipc_bns_map"].keys():
+            if ipc in KG_DATA:
+                kg_facts.extend(KG_DATA[ipc])
+
+    if kg_facts:
+        fused_parts.append("\nKnowledge Graph Facts:")
+        for fact in kg_facts:
+            fused_parts.append(f"- {fact}")
+
+    state["kg_context"] = kg_facts
+    state["fused_context"] = "\n".join(fused_parts)
+
+    return state
+
 def generate(state: GraphState) -> GraphState:
     if not state.get("retrieved_docs"):
         state["response"] = "The query could not be processed safely."
         return state
 
     # Base response from retrieved context
-    context = state["retrieved_docs"][0]["text"]
-    response = f"Based on the legal context: {context}"
+    context = state.get("fused_context", "")
+    response = f"Based on the combined legal context:\n{context}"
 
     # Add IPC → BNS mapping if available
     if state.get("ipc_bns_map"):
@@ -117,6 +162,28 @@ def generate(state: GraphState) -> GraphState:
     state["response"] = response
     return state
 
+def stream_response(state: GraphState):
+    """
+    Yields response chunks with citation markers.
+    """
+    yield "Based on the combined legal context:\n\n"
+
+    # Stream RAG content with citations
+    if state.get("retrieved_docs"):
+        for doc in state["retrieved_docs"]:
+            yield f"- {doc['text']} [{doc.get('source', 'RAG')}]\n"
+
+    # Stream KG facts
+    if state.get("kg_context"):
+        yield "\nKnowledge Graph Facts:\n"
+        for fact in state["kg_context"]:
+            yield f"- {fact} [KG]\n"
+
+    # Stream IPC → BNS mapping
+    if state.get("ipc_bns_map"):
+        yield "\nIPC → BNS Mapping:\n"
+        for ipc, bns in state["ipc_bns_map"].items():
+            yield f"- {ipc} → {bns}\n"
 
 from langgraph.graph import StateGraph
 
@@ -127,13 +194,17 @@ graph.add_node("SafetyGuard", safety_guard)
 graph.add_node("Retrieve", retrieve)
 graph.add_node("BNSMapper", bns_mapper)
 graph.add_node("Generate", generate)
+graph.add_node("ContextFusion", context_fusion)
+
 
 graph.set_entry_point("IntentDetect")
 
 graph.add_edge("IntentDetect", "SafetyGuard")
 graph.add_edge("SafetyGuard", "Retrieve")
 graph.add_edge("Retrieve", "BNSMapper")
-graph.add_edge("BNSMapper", "Generate")
+graph.add_edge("BNSMapper", "ContextFusion")
+graph.add_edge("ContextFusion", "Generate")
+
 
 
 app_graph = graph.compile()
