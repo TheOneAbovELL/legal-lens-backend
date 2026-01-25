@@ -31,9 +31,6 @@ The backend handles document loading, semantic search, and legal question answer
 
 ---
 
-
-
-=======
 # Legal Lens Backend
 
 Legal Lens is a **Groq-based Legal Research and Reasoning Backend** built using **FastAPI**.  
@@ -66,6 +63,3 @@ This repository contains the **backend system** responsible for document ingesti
 
 ---
 
-## 📁 Project Structure
-
->>>>>>> 4b77dc5 (Add requirements for Railway deployment)
