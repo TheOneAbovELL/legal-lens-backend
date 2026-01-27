@@ -49,3 +49,5 @@ def stream_query(payload: dict):
         stream_response(state),
         media_type="text/plain"
     )
+
+ 
