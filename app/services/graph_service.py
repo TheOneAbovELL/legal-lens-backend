@@ -1,5 +1,6 @@
-import os
 from neo4j import GraphDatabase
+import os
+
 
 class GraphService:
     def __init__(self):
@@ -7,25 +8,35 @@ class GraphService:
         self.user = os.getenv("NEO4J_USER")
         self.password = os.getenv("NEO4J_PASSWORD")
 
-        if not self.uri:
-            self.driver = None
-            return
-
         self.driver = GraphDatabase.driver(
             self.uri,
             auth=(self.user, self.password)
         )
 
     def close(self):
-        if self.driver:
-            self.driver.close()
+        self.driver.close()
 
     def test_connection(self):
-        if not self.driver:
-            return "Neo4j not configured"
-
         with self.driver.session() as session:
             result = session.run(
                 "RETURN 'Neo4j connection successful' AS message"
             )
             return result.single()["message"]
+
+    def get_statute_context(self, query: str):
+        with self.driver.session() as session:
+            result = session.run(
+                """
+                MATCH (s:Statute)
+                WHERE toLower(s.title) CONTAINS toLower($q)
+                   OR toLower(s.section) CONTAINS toLower($q)
+                RETURN s.code AS code, s.section AS section, s.title AS title
+                LIMIT 5
+                """,
+                q=query
+            )
+
+            return [
+                f"{r['code']} Section {r['section']}: {r['title']}"
+                for r in result
+            ]
