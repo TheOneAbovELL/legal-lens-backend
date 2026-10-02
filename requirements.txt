@@ -17,7 +17,7 @@ qdrant-client==1.16.2
 groq==1.0.0
 
 # -------- Embeddings / ML --------
-sentence-transformers==5.2.0
+sentence-transformers==5.6.0
 transformers==4.57.3
 tokenizers==0.22.1
 torch==2.2.2+cpu
