@@ -2,10 +2,10 @@ import { useState, type FormEvent } from "react";
 import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Field";
-import { Alert } from "@/components/ui/Card";
+import { Notice } from "@/components/ui/Feedback";
 import { describeError } from "@/lib/utils/errors";
+import { AuthLayout } from "./AuthLayout";
 import { useAuth } from "./AuthProvider";
-import { AuthBrand } from "./AuthBrand";
 
 export function LoginPage() {
   const { status, login, expiredNotice } = useAuth();
@@ -38,21 +38,15 @@ export function LoginPage() {
   };
 
   return (
-    <main className="auth">
-      <div className="card auth__card">
-        <AuthBrand />
-        <p className="auth__sub">Sign in to keep your conversations and evidence history.</p>
-        {expiredNotice ? <Alert tone="warning">Your session expired. Please sign in again.</Alert> : null}
-        <form onSubmit={onSubmit} noValidate>
-          <Input label="Username or email" autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} required />
-          <Input label="Password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
-          {error ? <Alert tone="danger">{error}</Alert> : null}
-          <Button type="submit" variant="primary" block loading={busy}>Sign in</Button>
-        </form>
-        <p style={{ margin: 0, fontSize: 14, color: "var(--text-muted)" }}>
-          New here? <Link to="/signup">Create an account</Link>
-        </p>
-      </div>
-    </main>
+    <AuthLayout title="Sign in" subtitle="Continue your research with your conversations and evidence history.">
+      {expiredNotice ? <Notice tone="warn">Your session expired. Please sign in again.</Notice> : null}
+      <form onSubmit={onSubmit} noValidate>
+        <Input label="Username or email" autoComplete="username" value={username} onChange={(e) => setUsername(e.target.value)} required autoFocus />
+        <Input label="Password" type="password" autoComplete="current-password" value={password} onChange={(e) => setPassword(e.target.value)} required />
+        {error ? <Notice tone="danger">{error}</Notice> : null}
+        <Button type="submit" variant="primary" size="lg" block loading={busy}>Continue</Button>
+      </form>
+      <p className="auth__alt">New to Legal Lens? <Link to="/signup">Create an account</Link></p>
+    </AuthLayout>
   );
 }
