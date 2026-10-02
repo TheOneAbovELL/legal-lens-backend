@@ -18,7 +18,7 @@ groq==1.0.0
 
 # -------- Embeddings / ML --------
 sentence-transformers==5.2.0
-transformers==4.57.3
+transformers==5.10.1
 tokenizers==0.22.1
 torch==2.2.2+cpu
 
