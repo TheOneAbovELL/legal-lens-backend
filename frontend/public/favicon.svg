@@ -1,6 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32">
-  <rect width="32" height="32" rx="7" fill="#1f3a5f"/>
-  <circle cx="14" cy="14" r="7" fill="none" stroke="#e9eef5" stroke-width="2.5"/>
-  <line x1="19.5" y1="19.5" x2="26" y2="26" stroke="#e9eef5" stroke-width="3" stroke-linecap="round"/>
-  <line x1="10" y1="14" x2="18" y2="14" stroke="#c9a227" stroke-width="2" stroke-linecap="round"/>
+  <rect width="32" height="32" rx="6" fill="#1a1c21"/>
+  <!-- lens over a document line: an abstract "clarity" mark -->
+  <circle cx="15" cy="15" r="7.5" fill="none" stroke="#f4f2ed" stroke-width="2.2"/>
+  <path d="M20.5 20.5 L26 26" stroke="#f4f2ed" stroke-width="2.6" stroke-linecap="round"/>
+  <path d="M11 15 H19" stroke="#8fb4de" stroke-width="2" stroke-linecap="round"/>
+  <path d="M12.5 11.8 H17.5" stroke="#8fb4de" stroke-width="1.6" stroke-linecap="round" opacity="0.7"/>
 </svg>

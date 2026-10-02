@@ -1,13 +1,22 @@
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
-interface MenuItem {
+export interface MenuItem {
   label: string;
+  icon?: ReactNode;
   onSelect: () => void;
   danger?: boolean;
 }
 
-/** Small dropdown with click-outside and Escape handling (used by account and conversation menus). */
-export function Menu({ trigger, items, header, label }: { trigger: ReactNode; items: MenuItem[]; header?: ReactNode; label: string }) {
+interface Props {
+  trigger: (props: { open: boolean; toggle: () => void; id: string }) => ReactNode;
+  items: MenuItem[];
+  header?: ReactNode;
+  align?: "left" | "right";
+}
+
+/** Dropdown with click-outside, Escape and arrow-key navigation. The trigger is render-prop so any
+ * button (icon or avatar) can open it. */
+export function Menu({ trigger, items, header, align = "right" }: Props) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   const id = useId();
@@ -18,27 +27,33 @@ export function Menu({ trigger, items, header, label }: { trigger: ReactNode; it
     };
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") setOpen(false);
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        const nodes = Array.from(ref.current?.querySelectorAll<HTMLElement>('[role="menuitem"]') ?? []);
+        if (!nodes.length) return;
+        e.preventDefault();
+        const idx = nodes.indexOf(document.activeElement as HTMLElement);
+        const next = e.key === "ArrowDown" ? (idx + 1) % nodes.length : (idx - 1 + nodes.length) % nodes.length;
+        nodes[next]?.focus();
+      }
     };
     document.addEventListener("mousedown", onDoc);
     document.addEventListener("keydown", onKey);
+    ref.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
     return () => {
       document.removeEventListener("mousedown", onDoc);
       document.removeEventListener("keydown", onKey);
     };
   }, [open]);
   return (
-    <div ref={ref} style={{ position: "relative" }}>
-      <button type="button" className="btn btn--ghost btn--sm" aria-haspopup="menu" aria-expanded={open} aria-controls={id}
-        aria-label={label} onClick={() => setOpen((o) => !o)}>
-        {trigger}
-      </button>
+    <div ref={ref} className="menu-anchor">
+      {trigger({ open, toggle: () => setOpen((o) => !o), id })}
       {open ? (
-        <div id={id} className="menu" role="menu">
-          {header ? <div className="menu__meta">{header}</div> : null}
+        <div id={id} className={`menu${align === "left" ? " menu--left" : ""}`} role="menu">
+          {header ? <div className="menu__head">{header}</div> : null}
           {items.map((item) => (
-            <button key={item.label} type="button" role="menuitem" className="menu__item"
-              style={item.danger ? { color: "var(--danger)" } : undefined}
+            <button key={item.label} type="button" role="menuitem" className={`menu__item${item.danger ? " menu__item--danger" : ""}`}
               onClick={() => { setOpen(false); item.onSelect(); }}>
+              {item.icon}
               {item.label}
             </button>
           ))}
