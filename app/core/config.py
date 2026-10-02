@@ -51,6 +51,8 @@ class Settings(BaseSettings):
     log_json: bool | None = None  # None -> JSON in production, readable text otherwise
     # Public URL printed in the startup banner (uvicorn's bind address is not visible to the app).
     public_base_url: str = "http://127.0.0.1:8000"
+    #: Optional: serve a built frontend (frontend/dist) from this process; empty/missing -> API only.
+    frontend_dist_path: Path | None = None
     # Safe structured diagnostics (retrieval stages, sub-queries, timings) in responses and the
     # /api/v1/diagnostics endpoints. None -> enabled everywhere except production.
     diagnostics_enabled: bool | None = None
@@ -58,7 +60,8 @@ class Settings(BaseSettings):
 
     # ---- HTTP / security ----
     cors_origins: CsvList = Field(
-        default_factory=lambda: ["http://localhost:3000", "http://127.0.0.1:3000"]
+        default_factory=lambda: ["http://localhost:5173", "http://127.0.0.1:5173",
+                                 "http://localhost:3000", "http://127.0.0.1:3000"]
     )
     max_request_bytes: int = Field(default=64 * 1024, ge=1024)
     max_query_chars: int = Field(default=4000, ge=10)

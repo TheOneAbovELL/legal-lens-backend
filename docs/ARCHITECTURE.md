@@ -16,7 +16,17 @@ Providers (app/providers) Qdrant store, embeddings, LLM providers + router, Neo4
 Core (app/core)           settings, logging, exceptions, retry, security, text utils
 ```
 
+```
+Browser ─ frontend/ (React + TypeScript)
+  src/lib/api (one typed client, one SSE parser) ─▶ FastAPI routers
+  features/{auth, chat, citations, conversations, search, legal, diagnostics}
+```
+
 Rules enforced by the layout:
+
+* The frontend talks only to the HTTP API (never to Qdrant, Groq or the database) through
+  `src/lib/api`; its types mirror `app/schemas` and are checked against the exported OpenAPI
+  document (`frontend/contract/openapi.json`, `tests/contract.test.ts`).
 
 * Routers never touch Qdrant, embeddings, prompts or chunking — they build `PipelineOptions` and
   call `PipelineService`.
@@ -47,8 +57,12 @@ POST /api/v1/chat ─▶ validation ─▶ PipelineService.run / .stream
 
 * **Qdrant** — chunks with named dense (`dense`, 1024-d cosine) and sparse (`sparse`, IDF modifier)
   vectors and full chunk metadata payload. Cloud/server (`QDRANT_URL`) or embedded (`QDRANT_PATH`).
-* **SQL** (SQLite default, PostgreSQL via `DATABASE_URL`) — `users` only, managed by Alembic.
-  Conversations are deliberately not persisted (MoM: MEM-0 is non-persistent).
+* **SQL** (SQLite default, PostgreSQL via `DATABASE_URL`) — `users`, `conversations`, `messages`,
+  `message_evidence` (Alembic migrations `0001`, `0002`). Every conversation query is scoped by the
+  owning user. `ChatService` (`app/services/chat.py`) wraps the pipeline: the user message is
+  committed before generation, the assistant message afterwards with its citations and a status
+  (`complete`, `refused`, `insufficient_evidence`, `small_talk`, `failed`, `incomplete`). Anonymous
+  requests stay stateless. MEM-0 short-term memory remains in-process and non-persistent (MoM).
 * **Neo4j** — optional; used for statute lookup and REPLACED_BY cross-checks. Guarded by a per-call
   timeout and a circuit breaker so an outage costs one timeout per cooldown window.
 

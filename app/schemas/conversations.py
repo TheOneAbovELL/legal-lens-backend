@@ -2,9 +2,14 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 
-from pydantic import AliasChoices, BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, field_validator
+
+
+def _utc(value: datetime | None) -> datetime | None:
+    """SQLite drops tzinfo; timestamps are stored in UTC, so label naive values explicitly."""
+    return value.replace(tzinfo=UTC) if value is not None and value.tzinfo is None else value
 
 
 class ConversationCreate(BaseModel):
@@ -44,6 +49,8 @@ class MessageOut(BaseModel):
     created_at: datetime
     citations: list[EvidenceOut] = Field(default_factory=list, validation_alias=AliasChoices("citations", "evidence"))
 
+    _tz = field_validator("created_at")(_utc)
+
 
 class ConversationOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
@@ -53,6 +60,8 @@ class ConversationOut(BaseModel):
     created_at: datetime
     updated_at: datetime
     archived_at: datetime | None = None
+
+    _tz = field_validator("created_at", "updated_at", "archived_at")(_utc)
 
 
 class ConversationDetail(ConversationOut):

@@ -11,6 +11,7 @@ from app.api.deps import ContainerDep, OptionalUser, RateLimited
 from app.api.errors import responses
 from app.api.v1.common import SSE_HEADERS, build_options, check_query, public_result, request_id, sse
 from app.core.config import Settings
+from app.graph.runner import PipelineResult
 from app.graph.state import PipelineMode
 from app.schemas.chat import CHAT_EXAMPLES, ChatRequest, ChatResponse, QueryAnalysis
 from app.schemas.common import BnsAlert
@@ -33,6 +34,23 @@ _SSE_RESPONSE = {200: {"description": SSE_DOC, "content": {"text/event-stream": 
                        'data: {"type": "token", "content": "Section"}\n\n'
                        'data: {"type": "complete", "status": "complete", "message_id": "...", "answer": "...", '
                        '"citations": [...]}\n\n'}}}}
+
+
+async def as_chat_events(events, settings: Settings):  # type: ignore[no-untyped-def]
+    """Re-shape the pipeline's ``complete`` event into the exact ``ChatResponse`` contract so streaming and
+    JSON clients parse one schema (``bns_alerts``, ``analysis``, ``status``, persistence ids)."""
+    async for event in events:
+        if event.get("type") != "complete":
+            yield event
+            continue
+        outcome = ChatOutcome(
+            result=PipelineResult.model_validate({**event, "evidence": []}),
+            status=event.get("status", "complete"),
+            conversation_id=event.get("conversation_id"),
+            message_id=event.get("message_id"),
+            persisted=bool(event.get("persisted", False)),
+        )
+        yield {"type": "complete", **to_chat_response(outcome, settings).model_dump(mode="json")}
 
 
 def to_chat_response(outcome: ChatOutcome, settings: Settings) -> ChatResponse:
@@ -80,7 +98,8 @@ async def chat(body: ChatBody, request: Request, container: ContainerDep, user: 
     wants_stream = body.stream or "text/event-stream" in request.headers.get("accept", "")
     if wants_stream:
         events = container.chat.stream(request_id(), query, options, user=user, conversation_id=body.session_id)
-        return StreamingResponse(sse(events), media_type="text/event-stream", headers=SSE_HEADERS)
+        return StreamingResponse(sse(as_chat_events(events, container.settings)), media_type="text/event-stream",
+                                 headers=SSE_HEADERS)
     outcome = await container.chat.ask(request_id(), query, options, user=user, conversation_id=body.session_id)
     return to_chat_response(outcome, container.settings)
 
@@ -103,7 +122,8 @@ async def chat_stream(body: ChatBody, container: ContainerDep, user: OptionalUse
     options = build_options(mode=PipelineMode.ANSWER, user=user, role=body.user_role, profile=body.profile,
                             filters=body.filters, session_id=body.session_id)
     events = container.chat.stream(request_id(), query, options, user=user, conversation_id=body.session_id)
-    return StreamingResponse(sse(events), media_type="text/event-stream", headers=SSE_HEADERS)
+    return StreamingResponse(sse(as_chat_events(events, container.settings)), media_type="text/event-stream",
+                             headers=SSE_HEADERS)
 
 
 @router.post(

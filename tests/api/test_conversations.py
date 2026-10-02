@@ -97,6 +97,10 @@ async def test_stream_complete_event_carries_persisted_message_id(client: httpx.
     start, complete = events[0], events[-1]
     assert start["type"] == "start" and start["persisted"] is True and start["conversation_id"]
     assert complete["type"] == "complete" and complete["message_id"] and complete["status"] == "complete"
+    # The complete event is the ChatResponse contract, byte-for-byte the same keys as the JSON endpoint.
+    json_body = (await client.post("/api/v1/chat", json={"query": "Explain Section 420 IPC"}, headers=alice)).json()
+    assert set(complete) - {"type"} == set(json_body)
+    assert complete["bns_alerts"][0]["old"] == "IPC 420" and complete["analysis"]["complexity"] == "SIMPLE"
     assert any(e["type"] == "analysis" and e["complexity"] == "SIMPLE" for e in events)
     detail = (await client.get(f"/api/v1/conversations/{start['conversation_id']}", headers=alice)).json()
     assert detail["messages"][1]["id"] == complete["message_id"]

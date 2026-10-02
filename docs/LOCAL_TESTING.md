@@ -168,3 +168,33 @@ Evaluation uses an isolated in-memory index; your `data\qdrant` is never modifie
 Press **Ctrl+C** in the uvicorn terminal. The log ends with `Shutdown complete.` after closing the LLM,
 vector store, database and graph clients. If port 8000 is still busy (`WinError 10013`), find the process:
 `Get-NetTCPConnection -LocalPort 8000 | Select-Object OwningProcess`.
+
+## 12. Test through the frontend
+
+The web client is the main functional verification surface (Swagger stays an engineering tool).
+
+```powershell
+cd frontend
+npm install
+npm run dev                                   # http://localhost:5173, proxies /api to 127.0.0.1:8000
+```
+
+1. Sign up (any username, a password with letters and digits) — you land in the workspace.
+2. Ask *What is Article 21 of the Constitution of India?* — watch the status row (analysing,
+   finding evidence, reviewing N passages, generating), the streamed tokens, then the SIMPLE badge.
+3. Click `[C1]` — the matching source card is selected in the right panel; **Open source** shows
+   the full passage; **Back** returns to the conversation.
+4. Ask *Explain the difference between Article 14 and Article 21.* (MODERATE / BALANCED) and
+   *Compare IPC 420 with BNS 318, explain the elements, identify the changes, and cite the relevant
+   statutory evidence.* (COMPLEX / DEEP / decomposed) — mapping cards show IPC 420 → BNS 318(4).
+5. Ask *Will I win my cheating case?* — the safety guard answers without retrieval.
+6. Refresh the page: the conversation and its citations reload from the database.
+7. **Search** tab: *Section 420 IPC* — results list retrieval sources (dense/sparse/metadata);
+   **Use in chat** sends the query back to the composer.
+8. **Diagnostics** tab (dev only): readiness, index, embedding, one real LLM call, routing inspector.
+9. Stop the backend: the banner says *Legal Lens backend is currently unavailable* with Retry;
+   start it again and press Retry.
+10. Sign out: `/app` redirects to `/login`; sign in returns you to the workspace with history.
+
+Deterministic offline variant (no model, no key): `python scripts/e2e_server.py --port 8011` and
+`$env:VITE_DEV_PROXY_TARGET="http://127.0.0.1:8011"; npm run dev`. Automated: `npm run test:e2e`.

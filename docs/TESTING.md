@@ -13,6 +13,17 @@
 | Live services | `tests/live` | `LIVE_TESTS=1` (Groq key, configured Qdrant read-only), `MODEL_TESTS=1` (real bge-m3) | `pytest tests/live -v` |
 | Running server | `scripts/smoke_test.py`, `scripts/verify_backend.py --server URL`, `scripts/test_stream.py`, `scripts/test_*.sh` | a running server | see LOCAL_TESTING.md |
 | Pipeline evaluation | `scripts/evaluate_rag.py`, `scripts/evaluate_chunking.py`, `scripts/evaluate_safety.py` | embedding model (+ LLM for `--with-answers`) | see EVALUATION.md |
+| Frontend unit + component | `frontend/tests` (Vitest, Testing Library; fetch mocked) | nothing | `cd frontend && npm test` |
+| Frontend ⇄ backend contract | `frontend/tests/contract.test.ts` vs `frontend/contract/openapi.json` | `python scripts/export_openapi.py` kept current (CI checks) | `npm run contract` |
+| Browser E2E | `frontend/e2e` (Playwright, desktop + Pixel 7) against `scripts/e2e_server.py` | Chromium (`npx playwright install chromium`) | `npm run test:e2e` |
+
+Frontend tests cover: login rendering + validation, authenticated client (bearer, request id,
+401 handling, expired token), chat submission, stream parsing (chunk boundaries, malformed lines),
+token rendering and reconciliation, citation click → evidence panel, insufficient-evidence and
+error states, backend-unavailable banner, search results / empty / degraded states, logout.
+E2E journeys: signup → ask → stream → citation → source → refresh (history) → logout → protected
+route → login; moderate and complex routing with decomposition; safety refusal; search + "Use in
+chat"; diagnostics; mobile drawers and no horizontal overflow.
 
 Test configuration lives in fixtures (`tests/conftest.py`) rather than a `.env.test` file: every test
 builds `Settings(_env_file=None, ...)` with an in-memory Qdrant collection, a temporary SQLite

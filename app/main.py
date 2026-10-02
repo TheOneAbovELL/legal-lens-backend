@@ -9,8 +9,11 @@ from __future__ import annotations
 from collections.abc import AsyncIterator, Callable
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 
 from app.api.errors import install_error_handlers
 from app.api.middleware import RequestContextMiddleware
@@ -112,7 +115,37 @@ def create_app(
     for router in (auth.router, chat.router, conversations.router, search.router, statutes.router,
                    diagnostics.router):
         app.include_router(router, prefix="/api/v1")
+    _mount_frontend(app, settings)
     return app
+
+
+def _mount_frontend(app: FastAPI, settings: Settings) -> None:
+    """Optionally serve the built single-page frontend from this process (FRONTEND_DIST_PATH).
+
+    API, docs and health routes keep precedence; every other GET falls back to index.html so client-side
+    routes survive a refresh. Separate hosting (nginx, CDN) remains the recommended production setup.
+    """
+    dist = settings.frontend_dist_path
+    if dist is None:
+        return
+    index = dist / "index.html"
+    if not index.is_file():
+        logger.warning(f"FRONTEND_DIST_PATH set but {index} is missing; serving the API only.")
+        return
+    assets = dist / "assets"
+    if assets.is_dir():
+        app.mount("/assets", StaticFiles(directory=assets), name="frontend-assets")
+
+    @app.get("/{path:path}", include_in_schema=False)
+    async def spa(path: str, request: Request):  # type: ignore[no-untyped-def]
+        if path.startswith(("api/", "docs", "redoc", "openapi.json", "health", "ready")):
+            raise StarletteHTTPException(status_code=404)
+        candidate = (dist / path).resolve()
+        if path and candidate.is_file() and dist.resolve() in candidate.parents:
+            return FileResponse(candidate)
+        return FileResponse(index, headers={"Cache-Control": "no-cache"})
+
+    logger.info(f"Serving frontend from {dist}")
 
 
 app = create_app()

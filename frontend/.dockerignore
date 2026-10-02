@@ -1,0 +1,9 @@
+node_modules
+dist
+.env
+.env.*
+!.env.example
+playwright-report
+test-results
+e2e
+tests

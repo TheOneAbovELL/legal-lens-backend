@@ -1,0 +1,5798 @@
+{
+  "components": {
+    "schemas": {
+      "BnsAlert": {
+        "description": "Statute alert for legacy provisions (frontend contract: old / new / effective).",
+        "properties": {
+          "effective": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective"
+          },
+          "mapping_type": {
+            "title": "Mapping Type",
+            "type": "string"
+          },
+          "new": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "New"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "old": {
+            "title": "Old",
+            "type": "string"
+          },
+          "provenance": {
+            "title": "Provenance",
+            "type": "string"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject"
+          },
+          "verification_status": {
+            "title": "Verification Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "old",
+          "new",
+          "effective",
+          "mapping_type",
+          "verification_status",
+          "provenance"
+        ],
+        "title": "BnsAlert",
+        "type": "object"
+      },
+      "ChatRequest": {
+        "example": {
+          "query": "What is the punishment for cheating under Section 420 IPC?"
+        },
+        "properties": {
+          "filters": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SearchFilters"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Restrict retrieval by act, section, court, date…"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "enum": [
+                  "FAST",
+                  "BALANCED",
+                  "DEEP"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Force a retrieval profile (default: adaptive routing)",
+            "title": "Profile"
+          },
+          "query": {
+            "description": "The legal question",
+            "maxLength": 8000,
+            "minLength": 1,
+            "title": "Query",
+            "type": "string"
+          },
+          "session_id": {
+            "anyOf": [
+              {
+                "pattern": "^[A-Za-z0-9_.:\\-]{1,128}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional conversation id (alias: conversation_id). Enables MEM-0 short-term follow-ups.",
+            "title": "Session Id"
+          },
+          "stream": {
+            "default": false,
+            "description": "Return Server-Sent Events instead of JSON",
+            "title": "Stream",
+            "type": "boolean"
+          },
+          "user_role": {
+            "anyOf": [
+              {
+                "enum": [
+                  "citizen",
+                  "advocate",
+                  "researcher"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Answer style; defaults to the user's role, else citizen",
+            "title": "User Role"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "ChatRequest",
+        "type": "object"
+      },
+      "ChatResponse": {
+        "properties": {
+          "analysis": {
+            "$ref": "#/components/schemas/QueryAnalysis"
+          },
+          "answer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Grounded answer with [C#] evidence and [M#] mapping citations",
+            "title": "Answer"
+          },
+          "bns_alerts": {
+            "description": "IPC/CrPC/IEA -> BNS/BNSS/BSA alerts with provenance",
+            "items": {
+              "$ref": "#/components/schemas/BnsAlert"
+            },
+            "title": "Bns Alerts",
+            "type": "array"
+          },
+          "citations": {
+            "description": "Only evidence actually cited in the answer",
+            "items": {
+              "$ref": "#/components/schemas/Citation"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "conversation_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Persisted conversation (authenticated callers)",
+            "title": "Conversation Id"
+          },
+          "diagnostics": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RetrievalDiagnostics"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Stage-by-stage retrieval diagnostics (non-production environments only)"
+          },
+          "disclaimer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Disclaimer"
+          },
+          "message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Persisted assistant message id, when persisted",
+            "title": "Message Id"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/PipelineMetadata"
+          },
+          "persisted": {
+            "default": false,
+            "description": "False for anonymous/stateless requests",
+            "title": "Persisted",
+            "type": "boolean"
+          },
+          "refused": {
+            "description": "True when the safety guard redirected the request",
+            "title": "Refused",
+            "type": "boolean"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "source": {
+            "description": "Legacy field: 'qdrant' when answered from indexed evidence, else 'none'",
+            "title": "Source",
+            "type": "string"
+          },
+          "status": {
+            "default": "complete",
+            "enum": [
+              "complete",
+              "refused",
+              "insufficient_evidence",
+              "small_talk"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "answer",
+          "source",
+          "request_id",
+          "analysis",
+          "refused",
+          "citations",
+          "bns_alerts",
+          "warnings",
+          "disclaimer",
+          "metadata"
+        ],
+        "title": "ChatResponse",
+        "type": "object"
+      },
+      "ChunkMetadata": {
+        "properties": {
+          "act": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Act"
+          },
+          "block_types": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Block Types",
+            "type": "array"
+          },
+          "case_citation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Case Citation"
+          },
+          "case_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Case Name"
+          },
+          "char_end": {
+            "title": "Char End",
+            "type": "integer"
+          },
+          "char_start": {
+            "title": "Char Start",
+            "type": "integer"
+          },
+          "chunk_id": {
+            "title": "Chunk Id",
+            "type": "string"
+          },
+          "chunk_index": {
+            "title": "Chunk Index",
+            "type": "integer"
+          },
+          "chunk_profile": {
+            "title": "Chunk Profile",
+            "type": "string"
+          },
+          "chunk_size": {
+            "title": "Chunk Size",
+            "type": "integer"
+          },
+          "chunking_strategy": {
+            "title": "Chunking Strategy",
+            "type": "string"
+          },
+          "content_hash": {
+            "title": "Content Hash",
+            "type": "string"
+          },
+          "court": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Court"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "decision_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decision Date"
+          },
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "document_type": {
+            "$ref": "#/components/schemas/DocumentType"
+          },
+          "document_version": {
+            "title": "Document Version",
+            "type": "string"
+          },
+          "effective_date": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Effective Date"
+          },
+          "embedding_model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding Model"
+          },
+          "embedding_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding Version"
+          },
+          "hierarchy_level": {
+            "default": 1,
+            "title": "Hierarchy Level",
+            "type": "integer"
+          },
+          "is_latest": {
+            "default": true,
+            "title": "Is Latest",
+            "type": "boolean"
+          },
+          "jurisdiction": {
+            "title": "Jurisdiction",
+            "type": "string"
+          },
+          "overlap": {
+            "title": "Overlap",
+            "type": "integer"
+          },
+          "page_number": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page Number"
+          },
+          "paragraph": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paragraph"
+          },
+          "parent_chunk_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Chunk Id"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section"
+          },
+          "section_heading": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Heading"
+          },
+          "semantic_boundary": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Semantic Boundary"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "subsection": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subsection"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "token_count": {
+            "title": "Token Count",
+            "type": "integer"
+          },
+          "unit_kind": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit Kind"
+          }
+        },
+        "required": [
+          "chunk_id",
+          "document_id",
+          "document_version",
+          "source",
+          "title",
+          "document_type",
+          "jurisdiction",
+          "chunking_strategy",
+          "chunk_profile",
+          "chunk_size",
+          "overlap",
+          "token_count",
+          "chunk_index",
+          "char_start",
+          "char_end",
+          "content_hash",
+          "created_at"
+        ],
+        "title": "ChunkMetadata",
+        "type": "object"
+      },
+      "Citation": {
+        "properties": {
+          "act": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Act"
+          },
+          "case_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Case Name"
+          },
+          "chunk_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chunk Id"
+          },
+          "citation_id": {
+            "title": "Citation Id",
+            "type": "string"
+          },
+          "court": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Court"
+          },
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "document_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Version"
+          },
+          "excerpt": {
+            "default": "",
+            "description": "Leading text of the cited passage (bounded)",
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "paragraph": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Paragraph"
+          },
+          "retrieval_sources": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Retrieval Sources",
+            "type": "array"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section"
+          },
+          "section_heading": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section Heading"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "subsection": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subsection"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "citation_id",
+          "document_id",
+          "title",
+          "source"
+        ],
+        "title": "Citation",
+        "type": "object"
+      },
+      "Complexity": {
+        "enum": [
+          "SIMPLE",
+          "MODERATE",
+          "COMPLEX"
+        ],
+        "title": "Complexity",
+        "type": "string"
+      },
+      "ComplexityResult": {
+        "properties": {
+          "complexity": {
+            "$ref": "#/components/schemas/Complexity"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "detected_entities": {
+            "items": {
+              "$ref": "#/components/schemas/LegalEntity"
+            },
+            "title": "Detected Entities",
+            "type": "array"
+          },
+          "evidence_level": {
+            "$ref": "#/components/schemas/EvidenceLevel",
+            "default": "single_source"
+          },
+          "features": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Features",
+            "type": "object"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "requires_decomposition": {
+            "default": false,
+            "title": "Requires Decomposition",
+            "type": "boolean"
+          },
+          "requires_multi_hop": {
+            "default": false,
+            "title": "Requires Multi Hop",
+            "type": "boolean"
+          },
+          "requires_reranking": {
+            "default": false,
+            "title": "Requires Reranking",
+            "type": "boolean"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          }
+        },
+        "required": [
+          "complexity",
+          "confidence",
+          "score"
+        ],
+        "title": "ComplexityResult",
+        "type": "object"
+      },
+      "ComponentStatus": {
+        "properties": {
+          "detail": {
+            "additionalProperties": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                },
+                {
+                  "type": "number"
+                },
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "title": "Detail",
+            "type": "object"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Error class/summary; never credentials",
+            "title": "Error"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "required": {
+            "title": "Required",
+            "type": "boolean"
+          },
+          "status": {
+            "description": "ok | configured | loading | unavailable | not_configured | disabled | failed",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "status",
+          "required"
+        ],
+        "title": "ComponentStatus",
+        "type": "object"
+      },
+      "ConfigSummary": {
+        "properties": {
+          "adaptive_selection_mode": {
+            "title": "Adaptive Selection Mode",
+            "type": "string"
+          },
+          "auth_required": {
+            "title": "Auth Required",
+            "type": "boolean"
+          },
+          "complexity_routing_enabled": {
+            "title": "Complexity Routing Enabled",
+            "type": "boolean"
+          },
+          "decomposition": {
+            "title": "Decomposition",
+            "type": "string"
+          },
+          "default_chunk_profile": {
+            "title": "Default Chunk Profile",
+            "type": "string"
+          },
+          "diagnostics_enabled": {
+            "title": "Diagnostics Enabled",
+            "type": "boolean"
+          },
+          "embedding_dimension": {
+            "title": "Embedding Dimension",
+            "type": "integer"
+          },
+          "embedding_model": {
+            "title": "Embedding Model",
+            "type": "string"
+          },
+          "environment": {
+            "title": "Environment",
+            "type": "string"
+          },
+          "knowledge_graph_enabled": {
+            "title": "Knowledge Graph Enabled",
+            "type": "boolean"
+          },
+          "llm_api_key_configured": {
+            "title": "Llm Api Key Configured",
+            "type": "boolean"
+          },
+          "llm_targets": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Llm Targets",
+            "type": "array"
+          },
+          "rate_limit": {
+            "title": "Rate Limit",
+            "type": "string"
+          },
+          "registration_enabled": {
+            "title": "Registration Enabled",
+            "type": "boolean"
+          },
+          "reranker_model": {
+            "title": "Reranker Model",
+            "type": "string"
+          },
+          "session_memory_enabled": {
+            "title": "Session Memory Enabled",
+            "type": "boolean"
+          },
+          "vector_store": {
+            "title": "Vector Store",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "environment",
+          "version",
+          "diagnostics_enabled",
+          "auth_required",
+          "registration_enabled",
+          "rate_limit",
+          "vector_store",
+          "embedding_model",
+          "embedding_dimension",
+          "reranker_model",
+          "llm_targets",
+          "llm_api_key_configured",
+          "knowledge_graph_enabled",
+          "complexity_routing_enabled",
+          "decomposition",
+          "default_chunk_profile",
+          "adaptive_selection_mode",
+          "session_memory_enabled"
+        ],
+        "title": "ConfigSummary",
+        "type": "object"
+      },
+      "ContextDiagnostics": {
+        "properties": {
+          "context_tokens": {
+            "title": "Context Tokens",
+            "type": "integer"
+          },
+          "dropped_budget": {
+            "title": "Dropped Budget",
+            "type": "integer"
+          },
+          "dropped_duplicates": {
+            "title": "Dropped Duplicates",
+            "type": "integer"
+          },
+          "dropped_low_relevance": {
+            "title": "Dropped Low Relevance",
+            "type": "integer"
+          },
+          "executed": {
+            "title": "Executed",
+            "type": "boolean"
+          },
+          "groups": {
+            "title": "Groups",
+            "type": "integer"
+          },
+          "selected_chunks": {
+            "title": "Selected Chunks",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "executed",
+          "selected_chunks",
+          "groups",
+          "context_tokens",
+          "dropped_duplicates",
+          "dropped_low_relevance",
+          "dropped_budget"
+        ],
+        "title": "ContextDiagnostics",
+        "type": "object"
+      },
+      "ConversationCreate": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Optional; defaults to 'New conversation'",
+            "title": "Title"
+          }
+        },
+        "title": "ConversationCreate",
+        "type": "object"
+      },
+      "ConversationDetail": {
+        "properties": {
+          "archived_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "messages": {
+            "items": {
+              "$ref": "#/components/schemas/MessageOut"
+            },
+            "title": "Messages",
+            "type": "array"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "created_at",
+          "updated_at",
+          "messages"
+        ],
+        "title": "ConversationDetail",
+        "type": "object"
+      },
+      "ConversationList": {
+        "properties": {
+          "conversations": {
+            "items": {
+              "$ref": "#/components/schemas/ConversationOut"
+            },
+            "title": "Conversations",
+            "type": "array"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "conversations",
+          "total"
+        ],
+        "title": "ConversationList",
+        "type": "object"
+      },
+      "ConversationOut": {
+        "properties": {
+          "archived_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived At"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "title",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "ConversationOut",
+        "type": "object"
+      },
+      "ConversationUpdate": {
+        "properties": {
+          "title": {
+            "maxLength": 200,
+            "minLength": 1,
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "title"
+        ],
+        "title": "ConversationUpdate",
+        "type": "object"
+      },
+      "DocumentType": {
+        "enum": [
+          "statute",
+          "constitution",
+          "case_law",
+          "regulation",
+          "commentary",
+          "other"
+        ],
+        "title": "DocumentType",
+        "type": "string"
+      },
+      "EmbeddingDiagnostics": {
+        "properties": {
+          "dimension": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dimension"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "expected_dimension": {
+            "title": "Expected Dimension",
+            "type": "integer"
+          },
+          "finite": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Finite"
+          },
+          "l2_norm": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "≈1.0 when embeddings are normalized",
+            "title": "L2 Norm"
+          },
+          "latency_ms": {
+            "title": "Latency Ms",
+            "type": "number"
+          },
+          "loaded": {
+            "title": "Loaded",
+            "type": "boolean"
+          },
+          "model": {
+            "title": "Model",
+            "type": "string"
+          },
+          "model_version": {
+            "title": "Model Version",
+            "type": "string"
+          },
+          "non_zero": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Non Zero"
+          },
+          "normalized": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Normalized"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "model",
+          "model_version",
+          "loaded",
+          "expected_dimension",
+          "latency_ms"
+        ],
+        "title": "EmbeddingDiagnostics",
+        "type": "object"
+      },
+      "EntityType": {
+        "enum": [
+          "section",
+          "article",
+          "act",
+          "case_citation"
+        ],
+        "title": "EntityType",
+        "type": "string"
+      },
+      "ErrorDetail": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "details": {
+            "anyOf": [
+              {
+                "items": {
+                  "additionalProperties": true,
+                  "type": "object"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Details"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "title": "ErrorDetail",
+        "type": "object"
+      },
+      "ErrorResponse": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ErrorDetail"
+          }
+        },
+        "required": [
+          "error"
+        ],
+        "title": "ErrorResponse",
+        "type": "object"
+      },
+      "EvidenceLevel": {
+        "enum": [
+          "single_source",
+          "multi_source",
+          "cross_document"
+        ],
+        "title": "EvidenceLevel",
+        "type": "string"
+      },
+      "EvidenceOut": {
+        "properties": {
+          "act": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Act"
+          },
+          "chunk_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chunk Id"
+          },
+          "citation_id": {
+            "title": "Citation Id",
+            "type": "string"
+          },
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "excerpt": {
+            "default": "",
+            "title": "Excerpt",
+            "type": "string"
+          },
+          "page": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Page"
+          },
+          "score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Score"
+          },
+          "section": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Section"
+          },
+          "source": {
+            "title": "Source",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "citation_id",
+          "document_id",
+          "source",
+          "title"
+        ],
+        "title": "EvidenceOut",
+        "type": "object"
+      },
+      "EvidenceValidation": {
+        "properties": {
+          "evidence_count": {
+            "title": "Evidence Count",
+            "type": "integer"
+          },
+          "missing_provisions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Missing Provisions",
+            "type": "array"
+          },
+          "sufficient": {
+            "title": "Sufficient",
+            "type": "boolean"
+          },
+          "uncovered_subqueries": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Uncovered Subqueries",
+            "type": "array"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "sufficient",
+          "evidence_count"
+        ],
+        "title": "EvidenceValidation",
+        "type": "object"
+      },
+      "HTTPValidationError": {
+        "properties": {
+          "detail": {
+            "items": {
+              "$ref": "#/components/schemas/ValidationError"
+            },
+            "title": "Detail",
+            "type": "array"
+          }
+        },
+        "title": "HTTPValidationError",
+        "type": "object"
+      },
+      "HealthResponse": {
+        "properties": {
+          "status": {
+            "const": "healthy",
+            "default": "healthy",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "title": "HealthResponse",
+        "type": "object"
+      },
+      "Intent": {
+        "enum": [
+          "statute_lookup",
+          "provision_mapping",
+          "case_law",
+          "procedural",
+          "document_analysis",
+          "general_legal",
+          "small_talk"
+        ],
+        "title": "Intent",
+        "type": "string"
+      },
+      "IntentResult": {
+        "properties": {
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "intent": {
+            "$ref": "#/components/schemas/Intent"
+          },
+          "signals": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Signals",
+            "type": "array"
+          }
+        },
+        "required": [
+          "intent",
+          "confidence"
+        ],
+        "title": "IntentResult",
+        "type": "object"
+      },
+      "LLMCheckRequest": {
+        "properties": {
+          "max_tokens": {
+            "default": 64,
+            "maximum": 256.0,
+            "minimum": 1.0,
+            "title": "Max Tokens",
+            "type": "integer"
+          },
+          "prompt": {
+            "default": "Respond with OK.",
+            "maxLength": 200,
+            "title": "Prompt",
+            "type": "string"
+          }
+        },
+        "title": "LLMCheckRequest",
+        "type": "object"
+      },
+      "LLMDiagnostics": {
+        "properties": {
+          "attempts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attempts"
+          },
+          "configured_providers": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Configured Providers",
+            "type": "array"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "latency_ms": {
+            "title": "Latency Ms",
+            "type": "number"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "response_preview": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "First 80 characters of the reply",
+            "title": "Response Preview"
+          },
+          "total_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Tokens"
+          }
+        },
+        "required": [
+          "ok",
+          "configured_providers",
+          "latency_ms"
+        ],
+        "title": "LLMDiagnostics",
+        "type": "object"
+      },
+      "LegalEntity": {
+        "properties": {
+          "act": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Act"
+          },
+          "raw": {
+            "title": "Raw",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/EntityType"
+          },
+          "value": {
+            "title": "Value",
+            "type": "string"
+          }
+        },
+        "required": [
+          "type",
+          "value",
+          "raw"
+        ],
+        "title": "LegalEntity",
+        "type": "object"
+      },
+      "LoginRequest": {
+        "properties": {
+          "password": {
+            "maxLength": 256,
+            "minLength": 1,
+            "title": "Password",
+            "type": "string"
+          },
+          "username": {
+            "description": "Username or email",
+            "maxLength": 254,
+            "minLength": 1,
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "LoginRequest",
+        "type": "object"
+      },
+      "MessageOut": {
+        "properties": {
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/EvidenceOut"
+            },
+            "title": "Citations",
+            "type": "array"
+          },
+          "complexity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Complexity"
+          },
+          "content": {
+            "title": "Content",
+            "type": "string"
+          },
+          "conversation_id": {
+            "title": "Conversation Id",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "intent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intent"
+          },
+          "request_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Request Id"
+          },
+          "role": {
+            "description": "user | assistant",
+            "title": "Role",
+            "type": "string"
+          },
+          "status": {
+            "description": "complete | refused | insufficient_evidence | small_talk | failed | incomplete",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "conversation_id",
+          "role",
+          "content",
+          "status",
+          "created_at"
+        ],
+        "title": "MessageOut",
+        "type": "object"
+      },
+      "OutputValidation": {
+        "properties": {
+          "cited_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Cited Ids",
+            "type": "array"
+          },
+          "invalid_citation_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Invalid Citation Ids",
+            "type": "array"
+          },
+          "regenerated": {
+            "default": false,
+            "title": "Regenerated",
+            "type": "boolean"
+          },
+          "unsupported_references": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Unsupported References",
+            "type": "array"
+          },
+          "valid": {
+            "title": "Valid",
+            "type": "boolean"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "valid"
+        ],
+        "title": "OutputValidation",
+        "type": "object"
+      },
+      "PipelineMetadata": {
+        "description": "Safe, structured observability metadata (no prompts, no chain-of-thought).",
+        "properties": {
+          "candidates": {
+            "default": 0,
+            "title": "Candidates",
+            "type": "integer"
+          },
+          "chunk_profiles": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chunk Profiles"
+          },
+          "complexity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComplexityResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "context_tokens": {
+            "default": 0,
+            "title": "Context Tokens",
+            "type": "integer"
+          },
+          "decomposition_method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decomposition Method"
+          },
+          "errors": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Errors",
+            "type": "array"
+          },
+          "evidence": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/EvidenceValidation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "evidence_selected": {
+            "default": 0,
+            "title": "Evidence Selected",
+            "type": "integer"
+          },
+          "follow_up": {
+            "default": false,
+            "title": "Follow Up",
+            "type": "boolean"
+          },
+          "intent": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/IntentResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "latency_ms": {
+            "default": 0.0,
+            "title": "Latency Ms",
+            "type": "number"
+          },
+          "llm_attempts": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Llm Attempts"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "output_validation": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/OutputValidation"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "profile_selection": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Profile Selection",
+            "type": "array"
+          },
+          "provider": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "reranker": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reranker"
+          },
+          "retrieval_profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retrieval Profile"
+          },
+          "retrieval_sources": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "title": "Retrieval Sources",
+            "type": "object"
+          },
+          "route": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Route"
+          },
+          "safety": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SafetyResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "subqueries": {
+            "items": {
+              "$ref": "#/components/schemas/SubQuery"
+            },
+            "title": "Subqueries",
+            "type": "array"
+          },
+          "timings_ms": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Timings Ms",
+            "type": "object"
+          },
+          "token_usage": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/TokenUsage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "request_id"
+        ],
+        "title": "PipelineMetadata",
+        "type": "object"
+      },
+      "QdrantDiagnostics": {
+        "properties": {
+          "collection": {
+            "title": "Collection",
+            "type": "string"
+          },
+          "collection_exists": {
+            "title": "Collection Exists",
+            "type": "boolean"
+          },
+          "dense_vector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dense Vector"
+          },
+          "distance": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Distance"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "expected_dimension": {
+            "title": "Expected Dimension",
+            "type": "integer"
+          },
+          "indexed_chunk_profiles": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Indexed Chunk Profiles"
+          },
+          "latency_ms": {
+            "title": "Latency Ms",
+            "type": "number"
+          },
+          "mode": {
+            "title": "Mode",
+            "type": "string"
+          },
+          "points": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Points"
+          },
+          "reachable": {
+            "title": "Reachable",
+            "type": "boolean"
+          },
+          "sparse_enabled": {
+            "title": "Sparse Enabled",
+            "type": "boolean"
+          },
+          "sparse_vector": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sparse Vector"
+          },
+          "target": {
+            "description": "Host or local path (no credentials)",
+            "title": "Target",
+            "type": "string"
+          },
+          "test_query_hits": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Test Query Hits"
+          },
+          "test_query_ok": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Read-only dense query with a probe vector",
+            "title": "Test Query Ok"
+          },
+          "vector_dimension": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vector Dimension"
+          }
+        },
+        "required": [
+          "reachable",
+          "mode",
+          "target",
+          "collection",
+          "collection_exists",
+          "expected_dimension",
+          "sparse_enabled",
+          "latency_ms"
+        ],
+        "title": "QdrantDiagnostics",
+        "type": "object"
+      },
+      "QueryAnalysis": {
+        "description": "Public query analysis: what the router decided, never how the model reasoned.",
+        "properties": {
+          "comparison_required": {
+            "default": false,
+            "title": "Comparison Required",
+            "type": "boolean"
+          },
+          "complexity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "SIMPLE | MODERATE | COMPLEX",
+            "title": "Complexity"
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "decomposition_needed": {
+            "default": false,
+            "title": "Decomposition Needed",
+            "type": "boolean"
+          },
+          "follow_up": {
+            "default": false,
+            "title": "Follow Up",
+            "type": "boolean"
+          },
+          "intent": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Intent"
+          },
+          "jurisdiction": {
+            "default": "IN",
+            "title": "Jurisdiction",
+            "type": "string"
+          },
+          "outside_jurisdiction": {
+            "default": false,
+            "title": "Outside Jurisdiction",
+            "type": "boolean"
+          },
+          "provisions": {
+            "description": "Provisions/articles detected in the question",
+            "items": {
+              "type": "string"
+            },
+            "title": "Provisions",
+            "type": "array"
+          },
+          "retrieval_profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "FAST | BALANCED | DEEP",
+            "title": "Retrieval Profile"
+          },
+          "route": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Route"
+          },
+          "safety_decision": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Safety Decision"
+          }
+        },
+        "title": "QueryAnalysis",
+        "type": "object"
+      },
+      "ReadinessResponse": {
+        "example": {
+          "checks": {
+            "application": "ok",
+            "database": "ok",
+            "embedding": "ok",
+            "knowledge_graph": "disabled",
+            "llm": "configured",
+            "qdrant": "ok"
+          },
+          "components": [
+            {
+              "detail": {
+                "collection": "legal-lens-chunks",
+                "mode": "local",
+                "points": 23
+              },
+              "name": "qdrant",
+              "required": true,
+              "status": "ok"
+            }
+          ],
+          "failed": [],
+          "status": "ready"
+        },
+        "properties": {
+          "checks": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "description": "component -> status",
+            "title": "Checks",
+            "type": "object"
+          },
+          "components": {
+            "items": {
+              "$ref": "#/components/schemas/ComponentStatus"
+            },
+            "title": "Components",
+            "type": "array"
+          },
+          "failed": {
+            "description": "Required components that are not usable",
+            "items": {
+              "type": "string"
+            },
+            "title": "Failed",
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "ready",
+              "not_ready"
+            ],
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "status",
+          "checks",
+          "components"
+        ],
+        "title": "ReadinessResponse",
+        "type": "object"
+      },
+      "RetrievalDiagnostics": {
+        "description": "What actually ran, derived from graph state (not configuration).",
+        "properties": {
+          "complexity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Complexity"
+          },
+          "context": {
+            "$ref": "#/components/schemas/ContextDiagnostics"
+          },
+          "fusion": {
+            "$ref": "#/components/schemas/StageDiagnostics"
+          },
+          "generation": {
+            "$ref": "#/components/schemas/StageDiagnostics"
+          },
+          "latency_ms": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "description": "dense includes query embedding; total is end-to-end",
+            "title": "Latency Ms",
+            "type": "object"
+          },
+          "provision_mapping": {
+            "$ref": "#/components/schemas/StageDiagnostics"
+          },
+          "reranking": {
+            "$ref": "#/components/schemas/StageDiagnostics"
+          },
+          "retrieval_mode": {
+            "description": "hybrid when more than one retrieval source executed",
+            "title": "Retrieval Mode",
+            "type": "string"
+          },
+          "retrieval_profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retrieval Profile"
+          },
+          "route": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Route"
+          },
+          "sources": {
+            "additionalProperties": {
+              "$ref": "#/components/schemas/SourceDiagnostics"
+            },
+            "title": "Sources",
+            "type": "object"
+          },
+          "subqueries": {
+            "items": {
+              "$ref": "#/components/schemas/SubQuery"
+            },
+            "title": "Subqueries",
+            "type": "array"
+          }
+        },
+        "required": [
+          "complexity",
+          "retrieval_profile",
+          "route",
+          "retrieval_mode",
+          "subqueries",
+          "sources",
+          "fusion",
+          "reranking",
+          "context",
+          "provision_mapping",
+          "generation",
+          "latency_ms"
+        ],
+        "title": "RetrievalDiagnostics",
+        "type": "object"
+      },
+      "RetrievalMetadata": {
+        "properties": {
+          "candidates": {
+            "description": "Unique candidates after fusion",
+            "title": "Candidates",
+            "type": "integer"
+          },
+          "chunk_profiles": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Chunk Profiles"
+          },
+          "complexity": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Complexity"
+          },
+          "latency_ms": {
+            "title": "Latency Ms",
+            "type": "number"
+          },
+          "reranker": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reranker"
+          },
+          "route": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Route"
+          },
+          "sources": {
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Raw hits per retrieval source",
+            "title": "Sources",
+            "type": "object"
+          },
+          "strategy": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Retrieval profile: FAST / BALANCED / DEEP",
+            "title": "Strategy"
+          },
+          "subqueries": {
+            "title": "Subqueries",
+            "type": "integer"
+          },
+          "timings_ms": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "title": "Timings Ms",
+            "type": "object"
+          }
+        },
+        "required": [
+          "strategy",
+          "complexity",
+          "route",
+          "reranker",
+          "chunk_profiles",
+          "subqueries",
+          "sources",
+          "candidates",
+          "latency_ms",
+          "timings_ms"
+        ],
+        "title": "RetrievalMetadata",
+        "type": "object"
+      },
+      "RootResponse": {
+        "properties": {
+          "docs": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Swagger UI path (absent when docs are disabled)",
+            "title": "Docs"
+          },
+          "service": {
+            "default": "legal-lens-backend",
+            "title": "Service",
+            "type": "string"
+          },
+          "status": {
+            "const": "ok",
+            "default": "ok",
+            "title": "Status",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "string"
+          }
+        },
+        "required": [
+          "version"
+        ],
+        "title": "RootResponse",
+        "type": "object"
+      },
+      "RouteDiagnostics": {
+        "properties": {
+          "complexity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ComplexityResult"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "decomposition_method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Decomposition Method"
+          },
+          "entities": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Entities",
+            "type": "array"
+          },
+          "intent": {
+            "$ref": "#/components/schemas/IntentResult"
+          },
+          "normalized_query": {
+            "title": "Normalized Query",
+            "type": "string"
+          },
+          "profile_selection": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Profile Selection",
+            "type": "array"
+          },
+          "query": {
+            "title": "Query",
+            "type": "string"
+          },
+          "reranker": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reranker"
+          },
+          "retrieval_profile": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Retrieval Profile"
+          },
+          "route": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Route"
+          },
+          "safety": {
+            "$ref": "#/components/schemas/SafetyResult"
+          },
+          "sources": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Sources",
+            "type": "array"
+          },
+          "subqueries": {
+            "items": {
+              "$ref": "#/components/schemas/SubQuery"
+            },
+            "title": "Subqueries",
+            "type": "array"
+          },
+          "would_refuse": {
+            "title": "Would Refuse",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "query",
+          "normalized_query",
+          "entities",
+          "intent",
+          "safety",
+          "would_refuse"
+        ],
+        "title": "RouteDiagnostics",
+        "type": "object"
+      },
+      "RouteRequest": {
+        "examples": [
+          {
+            "query": "What is Article 21?"
+          },
+          {
+            "query": "Explain the difference between Article 14 and Article 21."
+          },
+          {
+            "query": "Compare the legal consequences under IPC 420 and BNS 318, analyze how the change affects an accused person, and cite the relevant authorities."
+          }
+        ],
+        "properties": {
+          "query": {
+            "maxLength": 4000,
+            "minLength": 1,
+            "title": "Query",
+            "type": "string"
+          },
+          "use_llm_decomposition": {
+            "default": false,
+            "description": "Use the LLM decomposer for COMPLEX queries (costs tokens); default rule-based",
+            "title": "Use Llm Decomposition",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "RouteRequest",
+        "type": "object"
+      },
+      "SafetyDecision": {
+        "enum": [
+          "allow",
+          "allow_with_caution",
+          "refuse"
+        ],
+        "title": "SafetyDecision",
+        "type": "string"
+      },
+      "SafetyResult": {
+        "properties": {
+          "categories": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Categories",
+            "type": "array"
+          },
+          "decision": {
+            "$ref": "#/components/schemas/SafetyDecision"
+          },
+          "jurisdiction_note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jurisdiction Note"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "requires_disclaimer": {
+            "default": true,
+            "title": "Requires Disclaimer",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "decision"
+        ],
+        "title": "SafetyResult",
+        "type": "object"
+      },
+      "SearchFilters": {
+        "properties": {
+          "acts": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Acts"
+          },
+          "court": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 20,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Court"
+          },
+          "date_from": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date From"
+          },
+          "date_to": {
+            "anyOf": [
+              {
+                "format": "date",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Date To"
+          },
+          "document_ids": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Ids"
+          },
+          "document_types": {
+            "anyOf": [
+              {
+                "items": {
+                  "enum": [
+                    "statute",
+                    "constitution",
+                    "case_law",
+                    "regulation",
+                    "commentary",
+                    "other"
+                  ],
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Document Types"
+          },
+          "jurisdiction": {
+            "anyOf": [
+              {
+                "maxLength": 16,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Jurisdiction"
+          },
+          "sections": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Sections"
+          }
+        },
+        "title": "SearchFilters",
+        "type": "object"
+      },
+      "SearchRequest": {
+        "example": {
+          "query": "Section 302 IPC",
+          "top_k": 5
+        },
+        "properties": {
+          "filters": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SearchFilters"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "generate_answer": {
+            "default": false,
+            "description": "Also run grounded generation (calls the LLM)",
+            "title": "Generate Answer",
+            "type": "boolean"
+          },
+          "profile": {
+            "anyOf": [
+              {
+                "enum": [
+                  "FAST",
+                  "BALANCED",
+                  "DEEP"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Force a retrieval profile (default: adaptive)",
+            "title": "Profile"
+          },
+          "query": {
+            "description": "Search text",
+            "maxLength": 8000,
+            "minLength": 1,
+            "title": "Query",
+            "type": "string"
+          },
+          "top_k": {
+            "default": 10,
+            "description": "Number of results",
+            "maximum": 50.0,
+            "minimum": 1.0,
+            "title": "Top K",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "query"
+        ],
+        "title": "SearchRequest",
+        "type": "object"
+      },
+      "SearchResponse": {
+        "properties": {
+          "answer": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Answer"
+          },
+          "bns_alerts": {
+            "items": {
+              "$ref": "#/components/schemas/BnsAlert"
+            },
+            "title": "Bns Alerts",
+            "type": "array"
+          },
+          "diagnostics": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/RetrievalDiagnostics"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Stage-by-stage diagnostics (non-production environments only)"
+          },
+          "processing_time_ms": {
+            "title": "Processing Time Ms",
+            "type": "number"
+          },
+          "query": {
+            "title": "Query",
+            "type": "string"
+          },
+          "request_id": {
+            "title": "Request Id",
+            "type": "string"
+          },
+          "results": {
+            "items": {
+              "$ref": "#/components/schemas/SearchResult"
+            },
+            "title": "Results",
+            "type": "array"
+          },
+          "retrieval_metadata": {
+            "$ref": "#/components/schemas/RetrievalMetadata"
+          },
+          "total": {
+            "title": "Total",
+            "type": "integer"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Warnings",
+            "type": "array"
+          }
+        },
+        "required": [
+          "query",
+          "request_id",
+          "results",
+          "total",
+          "processing_time_ms",
+          "bns_alerts",
+          "warnings",
+          "retrieval_metadata"
+        ],
+        "title": "SearchResponse",
+        "type": "object"
+      },
+      "SearchResult": {
+        "properties": {
+          "bns_alert": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/BnsAlert"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "case_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Case Name"
+          },
+          "chunk_id": {
+            "title": "Chunk Id",
+            "type": "string"
+          },
+          "citation": {
+            "$ref": "#/components/schemas/Citation"
+          },
+          "content": {
+            "description": "Full chunk text",
+            "title": "Content",
+            "type": "string"
+          },
+          "document_id": {
+            "title": "Document Id",
+            "type": "string"
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/ChunkMetadata"
+          },
+          "relevance_score": {
+            "description": "Final ranking score (rerank score when reranked)",
+            "title": "Relevance Score",
+            "type": "number"
+          },
+          "rerank_score": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Reranker relevance in [0, 1]",
+            "title": "Rerank Score"
+          },
+          "retrieval_sources": {
+            "description": "Retrievers that returned this chunk: dense/sparse/metadata/graph",
+            "items": {
+              "type": "string"
+            },
+            "title": "Retrieval Sources",
+            "type": "array"
+          },
+          "score": {
+            "description": "Hybrid fusion score (weighted reciprocal rank fusion)",
+            "title": "Score",
+            "type": "number"
+          },
+          "snippet": {
+            "description": "First ~300 characters",
+            "title": "Snippet",
+            "type": "string"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "document_id",
+          "chunk_id",
+          "title",
+          "snippet",
+          "content",
+          "score",
+          "relevance_score",
+          "retrieval_sources",
+          "citation",
+          "metadata"
+        ],
+        "title": "SearchResult",
+        "type": "object"
+      },
+      "SignupRequest": {
+        "properties": {
+          "email": {
+            "anyOf": [
+              {
+                "maxLength": 254,
+                "pattern": "^[^@\\s]{1,64}@[^@\\s]{1,190}\\.[A-Za-z]{2,24}$",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "password": {
+            "maxLength": 72,
+            "minLength": 8,
+            "title": "Password",
+            "type": "string"
+          },
+          "role": {
+            "default": "citizen",
+            "enum": [
+              "citizen",
+              "advocate",
+              "researcher"
+            ],
+            "title": "Role",
+            "type": "string"
+          },
+          "username": {
+            "maxLength": 64,
+            "minLength": 3,
+            "pattern": "^[A-Za-z0-9_.\\-]+$",
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "password"
+        ],
+        "title": "SignupRequest",
+        "type": "object"
+      },
+      "SourceDiagnostics": {
+        "properties": {
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "executed": {
+            "description": "The source was queried for this request",
+            "title": "Executed",
+            "type": "boolean"
+          },
+          "hits": {
+            "description": "Raw hits returned across all sub-queries",
+            "title": "Hits",
+            "type": "integer"
+          },
+          "latency_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latency Ms"
+          }
+        },
+        "required": [
+          "executed",
+          "hits"
+        ],
+        "title": "SourceDiagnostics",
+        "type": "object"
+      },
+      "StageDiagnostics": {
+        "properties": {
+          "count": {
+            "description": "Items produced by this stage",
+            "title": "Count",
+            "type": "integer"
+          },
+          "executed": {
+            "title": "Executed",
+            "type": "boolean"
+          },
+          "latency_ms": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Latency Ms"
+          },
+          "method": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Method"
+          }
+        },
+        "required": [
+          "executed",
+          "count"
+        ],
+        "title": "StageDiagnostics",
+        "type": "object"
+      },
+      "SubQuery": {
+        "properties": {
+          "depends_on": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Depends On",
+            "type": "array"
+          },
+          "legal_entities": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Legal Entities",
+            "type": "array"
+          },
+          "priority": {
+            "default": 1,
+            "maximum": 5.0,
+            "minimum": 0.0,
+            "title": "Priority",
+            "type": "integer"
+          },
+          "purpose": {
+            "title": "Purpose",
+            "type": "string"
+          },
+          "query": {
+            "title": "Query",
+            "type": "string"
+          },
+          "required_evidence": {
+            "default": "",
+            "title": "Required Evidence",
+            "type": "string"
+          },
+          "subquery_id": {
+            "title": "Subquery Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "subquery_id",
+          "query",
+          "purpose"
+        ],
+        "title": "SubQuery",
+        "type": "object"
+      },
+      "TokenResponse": {
+        "properties": {
+          "access_token": {
+            "title": "Access Token",
+            "type": "string"
+          },
+          "expires_in": {
+            "title": "Expires In",
+            "type": "integer"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "token_type": {
+            "default": "bearer",
+            "title": "Token Type",
+            "type": "string"
+          },
+          "user": {
+            "title": "User",
+            "type": "string"
+          }
+        },
+        "required": [
+          "message",
+          "user",
+          "role",
+          "access_token",
+          "expires_in"
+        ],
+        "title": "TokenResponse",
+        "type": "object"
+      },
+      "TokenUsage": {
+        "properties": {
+          "completion_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Completion Tokens"
+          },
+          "prompt_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Prompt Tokens"
+          },
+          "total_tokens": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Total Tokens"
+          }
+        },
+        "title": "TokenUsage",
+        "type": "object"
+      },
+      "UserOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Email"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "role": {
+            "title": "Role",
+            "type": "string"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "username",
+          "email",
+          "role",
+          "created_at"
+        ],
+        "title": "UserOut",
+        "type": "object"
+      },
+      "ValidationError": {
+        "properties": {
+          "loc": {
+            "items": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "integer"
+                }
+              ]
+            },
+            "title": "Location",
+            "type": "array"
+          },
+          "msg": {
+            "title": "Message",
+            "type": "string"
+          },
+          "type": {
+            "title": "Error Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "loc",
+          "msg",
+          "type"
+        ],
+        "title": "ValidationError",
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "HTTPBearer": {
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "description": "\nGrounded legal-information retrieval and question answering for Indian law.\n\n**Start here**\n1. `GET /ready` — every required dependency should be `ok` / `configured`.\n2. `POST /api/v1/diagnostics/route` — see how a question is classified and routed (no LLM).\n3. `POST /api/v1/search` — inspect retrieval results and stage diagnostics (no LLM).\n4. `POST /api/v1/chat` — full answer with citations.\n5. Optional auth: `POST /api/v1/auth/signup` → copy `access_token` → **Authorize**.\n\nLegal Lens provides legal *information*, not legal advice. It never predicts outcomes or gives strategy.\n",
+    "summary": "Legal Lens backend API",
+    "title": "Legal Lens",
+    "version": "2.0.0"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/": {
+      "get": {
+        "description": "Minimal service identity. Contains no configuration or sensitive information.",
+        "operationId": "root__get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RootResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Service information",
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "description": "Accepts a username or email. Invalid credentials return 401 (no user enumeration).\n\n**Swagger:** copy `access_token` from the response, click **Authorize** (top right) and paste it (without the `Bearer ` prefix). Protected endpoints then send `Authorization: Bearer <token>`.",
+        "operationId": "login_api_v1_auth_login_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "login": {
+                  "summary": "Log in",
+                  "value": {
+                    "password": "Change-me-123",
+                    "username": "test_user"
+                  }
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "authentication_failed",
+                    "message": "Invalid or missing credentials.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired bearer token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "validation_error",
+                    "message": "The request is invalid.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Validation error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "rate_limited",
+                    "message": "Too many requests. Please retry later.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Rate limit exceeded (see Retry-After)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Log in and receive a signed JWT",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/v1/auth/me": {
+      "get": {
+        "description": "Use it to check that Swagger's **Authorize** token works.",
+        "operationId": "me_api_v1_auth_me_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UserOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "authentication_failed",
+                    "message": "Invalid or missing credentials.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired bearer token"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Current user (requires bearer token)",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/v1/auth/signup": {
+      "post": {
+        "description": "Passwords are stored as bcrypt hashes (8–72 bytes, must mix letters with digits/symbols). Disabled when `AUTH_ALLOW_REGISTRATION=false` (403).\n\n**Swagger:** copy `access_token` from the response, click **Authorize** (top right) and paste it (without the `Bearer ` prefix). Protected endpoints then send `Authorization: Bearer <token>`.",
+        "operationId": "signup_api_v1_auth_signup_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "citizen": {
+                  "summary": "New citizen account",
+                  "value": {
+                    "email": "test@example.com",
+                    "password": "Change-me-123",
+                    "role": "citizen",
+                    "username": "test_user"
+                  }
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/SignupRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TokenResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "403": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "forbidden",
+                    "message": "Self-registration is disabled.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not allowed"
+          },
+          "409": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "conflict",
+                    "message": "Username or email is already registered.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Conflict"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "validation_error",
+                    "message": "The request is invalid.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Validation error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "rate_limited",
+                    "message": "Too many requests. Please retry later.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Rate limit exceeded (see Retry-After)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create an account and receive an access token",
+        "tags": [
+          "Authentication"
+        ]
+      }
+    },
+    "/api/v1/chat": {
+      "post": {
+        "description": "Runs the full pipeline: intent → safety → complexity routing (SIMPLE/MODERATE/COMPLEX) → planning (expansion / decomposition) → hybrid retrieval (dense + sparse + metadata [+ graph]) → reranking → context fusion → IPC↔BNS mapping → evidence gate → grounded generation → citation validation.\n\nReturns JSON by default. With `stream: true` or `Accept: text/event-stream` it returns SSE (see `/api/v1/chat/stream`). Requires a bearer token only when `AUTH_REQUIRED=true`.\n\n**Conversations:** with a bearer token the exchange is persisted — omit `conversation_id` to start a new conversation (its id is returned) or pass one you own to continue it (404 otherwise). Anonymous requests are stateless (`persisted: false`).",
+        "operationId": "chat_api_v1_chat_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "complex": {
+                  "summary": "COMPLEX — comparison across codes (decomposed)",
+                  "value": {
+                    "query": "Compare the legal consequences under IPC 420 and BNS 318, analyze how the change affects an accused person, and cite the relevant authorities."
+                  }
+                },
+                "follow_up": {
+                  "summary": "MEM-0 follow-up (send twice with the same session_id)",
+                  "value": {
+                    "query": "What is its punishment?",
+                    "session_id": "demo-session-1"
+                  }
+                },
+                "moderate": {
+                  "summary": "MODERATE — two provisions / mapping",
+                  "value": {
+                    "query": "Explain the difference between Article 14 and Article 21."
+                  }
+                },
+                "refusal": {
+                  "summary": "Safety guard (redirected, no retrieval)",
+                  "value": {
+                    "query": "Will I win my cheating case?"
+                  }
+                },
+                "simple": {
+                  "summary": "SIMPLE — single provision lookup",
+                  "value": {
+                    "query": "What is the punishment for cheating under Section 420 IPC?"
+                  }
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ChatResponse"
+                }
+              }
+            },
+            "description": "JSON answer (or SSE when streaming is requested)"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "authentication_failed",
+                    "message": "Invalid or missing credentials.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired bearer token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "not_found",
+                    "message": "The requested resource was not found.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found (or not owned by the caller) / disabled"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "payload_too_large",
+                    "message": "Request body is too large.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request body too large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "validation_error",
+                    "message": "The request is invalid.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Validation error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "rate_limited",
+                    "message": "Too many requests. Please retry later.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Rate limit exceeded (see Retry-After)"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "llm_provider_error",
+                    "message": "The language model provider failed to respond.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "LLM provider failure after retries/fallback"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "vector_store_error",
+                    "message": "The document index is unavailable.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "A required dependency is unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "timeout",
+                    "message": "The request took too long to process.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Pipeline timeout"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Ask a legal question",
+        "tags": [
+          "Chat"
+        ]
+      }
+    },
+    "/api/v1/chat/stream": {
+      "post": {
+        "description": "Server-Sent Events: one JSON object per `data:` line, in order: `start` (request/conversation ids), `intent`, `safety`, `complexity`, `analysis`, `plan`, `retrieval`, `reranking`, `evidence`, `bns_alert`, `token`… (real provider deltas), `citation`…, `validation`, then `complete` (full result incl. `message_id`) or `error`. Test it with `python scripts/test_stream.py`; Swagger buffers SSE and shows the raw events only after the stream ends.",
+        "operationId": "chat_stream_api_v1_chat_stream_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "complex": {
+                  "summary": "COMPLEX — comparison across codes (decomposed)",
+                  "value": {
+                    "query": "Compare the legal consequences under IPC 420 and BNS 318, analyze how the change affects an accused person, and cite the relevant authorities."
+                  }
+                },
+                "follow_up": {
+                  "summary": "MEM-0 follow-up (send twice with the same session_id)",
+                  "value": {
+                    "query": "What is its punishment?",
+                    "session_id": "demo-session-1"
+                  }
+                },
+                "moderate": {
+                  "summary": "MODERATE — two provisions / mapping",
+                  "value": {
+                    "query": "Explain the difference between Article 14 and Article 21."
+                  }
+                },
+                "refusal": {
+                  "summary": "Safety guard (redirected, no retrieval)",
+                  "value": {
+                    "query": "Will I win my cheating case?"
+                  }
+                },
+                "simple": {
+                  "summary": "SIMPLE — single provision lookup",
+                  "value": {
+                    "query": "What is the punishment for cheating under Section 420 IPC?"
+                  }
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "text/event-stream": {
+                "example": "data: {\"type\": \"start\", \"request_id\": \"...\", \"conversation_id\": \"...\"}\n\ndata: {\"type\": \"token\", \"content\": \"Section\"}\n\ndata: {\"type\": \"complete\", \"status\": \"complete\", \"message_id\": \"...\", \"answer\": \"...\", \"citations\": [...]}\n\n"
+              }
+            },
+            "description": "Server-Sent Events: one JSON object per `data:` line, in order: `start` (request/conversation ids), `intent`, `safety`, `complexity`, `analysis`, `plan`, `retrieval`, `reranking`, `evidence`, `bns_alert`, `token`… (real provider deltas), `citation`…, `validation`, then `complete` (full result incl. `message_id`) or `error`. Test it with `python scripts/test_stream.py`; Swagger buffers SSE and shows the raw events only after the stream ends."
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "authentication_failed",
+                    "message": "Invalid or missing credentials.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired bearer token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "not_found",
+                    "message": "The requested resource was not found.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found (or not owned by the caller) / disabled"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "payload_too_large",
+                    "message": "Request body is too large.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request body too large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "validation_error",
+                    "message": "The request is invalid.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Validation error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "rate_limited",
+                    "message": "Too many requests. Please retry later.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Rate limit exceeded (see Retry-After)"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "llm_provider_error",
+                    "message": "The language model provider failed to respond.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "LLM provider failure after retries/fallback"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "vector_store_error",
+                    "message": "The document index is unavailable.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "A required dependency is unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "timeout",
+                    "message": "The request took too long to process.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Pipeline timeout"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Ask a legal question (Server-Sent Events)",
+        "tags": [
+          "Chat"
+        ]
+      }
+    },
+    "/api/v1/conversations": {
+      "get": {
+        "operationId": "list_conversations_api_v1_conversations_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 500,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "authentication_failed",
+                    "message": "Invalid or missing credentials.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired bearer token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List my conversations (most recent first)",
+        "tags": [
+          "Conversations"
+        ]
+      },
+      "post": {
+        "description": "Optional: `POST /chat` without `conversation_id` also creates one, titled from the question.",
+        "operationId": "create_conversation_api_v1_conversations_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "authentication_failed",
+                    "message": "Invalid or missing credentials.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired bearer token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "validation_error",
+                    "message": "The request is invalid.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Validation error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "rate_limited",
+                    "message": "Too many requests. Please retry later.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Rate limit exceeded (see Retry-After)"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create an empty conversation",
+        "tags": [
+          "Conversations"
+        ]
+      }
+    },
+    "/api/v1/conversations/{conversation_id}": {
+      "delete": {
+        "description": "Deletes the conversation, its messages and stored citations. Not reversible.",
+        "operationId": "delete_conversation_api_v1_conversations__conversation_id__delete",
+        "parameters": [
+          {
+            "description": "Conversation id returned by POST /conversations or /chat",
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "description": "Conversation id returned by POST /conversations or /chat",
+              "pattern": "^[A-Za-z0-9_.:\\-]{1,128}$",
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "authentication_failed",
+                    "message": "Invalid or missing credentials.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired bearer token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "not_found",
+                    "message": "The requested resource was not found.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found (or not owned by the caller) / disabled"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Delete a conversation",
+        "tags": [
+          "Conversations"
+        ]
+      },
+      "get": {
+        "description": "Messages carry their stored citations so history renders without touching the index.",
+        "operationId": "get_conversation_api_v1_conversations__conversation_id__get",
+        "parameters": [
+          {
+            "description": "Conversation id returned by POST /conversations or /chat",
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "description": "Conversation id returned by POST /conversations or /chat",
+              "pattern": "^[A-Za-z0-9_.:\\-]{1,128}$",
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationDetail"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "authentication_failed",
+                    "message": "Invalid or missing credentials.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired bearer token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "not_found",
+                    "message": "The requested resource was not found.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found (or not owned by the caller) / disabled"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get a conversation with its messages",
+        "tags": [
+          "Conversations"
+        ]
+      },
+      "patch": {
+        "operationId": "rename_conversation_api_v1_conversations__conversation_id__patch",
+        "parameters": [
+          {
+            "description": "Conversation id returned by POST /conversations or /chat",
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "description": "Conversation id returned by POST /conversations or /chat",
+              "pattern": "^[A-Za-z0-9_.:\\-]{1,128}$",
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ConversationUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "authentication_failed",
+                    "message": "Invalid or missing credentials.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired bearer token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "not_found",
+                    "message": "The requested resource was not found.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found (or not owned by the caller) / disabled"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "validation_error",
+                    "message": "The request is invalid.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Validation error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Rename a conversation",
+        "tags": [
+          "Conversations"
+        ]
+      }
+    },
+    "/api/v1/conversations/{conversation_id}/messages": {
+      "get": {
+        "operationId": "get_messages_api_v1_conversations__conversation_id__messages_get",
+        "parameters": [
+          {
+            "description": "Conversation id returned by POST /conversations or /chat",
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "description": "Conversation id returned by POST /conversations or /chat",
+              "pattern": "^[A-Za-z0-9_.:\\-]{1,128}$",
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/MessageOut"
+                  },
+                  "title": "Response Get Messages Api V1 Conversations  Conversation Id  Messages Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "authentication_failed",
+                    "message": "Invalid or missing credentials.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired bearer token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "not_found",
+                    "message": "The requested resource was not found.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found (or not owned by the caller) / disabled"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Messages of a conversation",
+        "tags": [
+          "Conversations"
+        ]
+      }
+    },
+    "/api/v1/diagnostics/config": {
+      "get": {
+        "description": "Which providers, models, profiles and features are active. Credentials are reported only as configured/not configured.",
+        "operationId": "config_api_v1_diagnostics_config_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfigSummary"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "authentication_failed",
+                    "message": "Invalid or missing credentials.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired bearer token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "not_found",
+                    "message": "The requested resource was not found.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found (or not owned by the caller) / disabled"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Effective configuration (no secrets)",
+        "tags": [
+          "Diagnostics"
+        ]
+      }
+    },
+    "/api/v1/diagnostics/embedding": {
+      "get": {
+        "description": "Embeds a probe sentence and checks dimension, finiteness, non-zero output and L2 normalization. Loads the model if it is not loaded yet (can take ~30 s the first time).",
+        "operationId": "embedding_api_v1_diagnostics_embedding_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/EmbeddingDiagnostics"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "authentication_failed",
+                    "message": "Invalid or missing credentials.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired bearer token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "not_found",
+                    "message": "The requested resource was not found.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found (or not owned by the caller) / disabled"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Verify the embedding model",
+        "tags": [
+          "Diagnostics"
+        ]
+      }
+    },
+    "/api/v1/diagnostics/llm": {
+      "post": {
+        "description": "Sends a minimal prompt through the configured retry/fallback chain with a short timeout and a small token limit. Not run automatically at startup.",
+        "operationId": "llm_api_v1_diagnostics_llm_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/LLMCheckRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LLMDiagnostics"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "authentication_failed",
+                    "message": "Invalid or missing credentials.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired bearer token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "not_found",
+                    "message": "The requested resource was not found.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found (or not owned by the caller) / disabled"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Verify the LLM provider (makes one small call)",
+        "tags": [
+          "Diagnostics"
+        ]
+      }
+    },
+    "/api/v1/diagnostics/qdrant": {
+      "get": {
+        "description": "Connection, collection existence, vector name/dimension/distance, sparse vector config, point count, indexed chunk profiles and a read-only probe query. Never writes.",
+        "operationId": "qdrant_api_v1_diagnostics_qdrant_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/QdrantDiagnostics"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "authentication_failed",
+                    "message": "Invalid or missing credentials.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired bearer token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "not_found",
+                    "message": "The requested resource was not found.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found (or not owned by the caller) / disabled"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Verify Qdrant",
+        "tags": [
+          "Diagnostics"
+        ]
+      }
+    },
+    "/api/v1/diagnostics/route": {
+      "post": {
+        "description": "Runs the deterministic front of the pipeline — normalization, entities, intent, safety, complexity, profile selection and query planning — without retrieval or generation. Use it to check SIMPLE / MODERATE / COMPLEX routing and the structured sub-queries for complex questions.",
+        "operationId": "route_api_v1_diagnostics_route_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RouteRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RouteDiagnostics"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "authentication_failed",
+                    "message": "Invalid or missing credentials.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired bearer token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "not_found",
+                    "message": "The requested resource was not found.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found (or not owned by the caller) / disabled"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Inspect intent, safety, complexity and routing",
+        "tags": [
+          "Diagnostics"
+        ]
+      }
+    },
+    "/api/v1/query/stream": {
+      "post": {
+        "deprecated": true,
+        "description": "Kept for clients of the previous API. Streams only answer text (real LLM tokens). Use `/api/v1/chat/stream` instead.",
+        "operationId": "legacy_query_stream_api_v1_query_stream_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "complex": {
+                  "summary": "COMPLEX — comparison across codes (decomposed)",
+                  "value": {
+                    "query": "Compare the legal consequences under IPC 420 and BNS 318, analyze how the change affects an accused person, and cite the relevant authorities."
+                  }
+                },
+                "follow_up": {
+                  "summary": "MEM-0 follow-up (send twice with the same session_id)",
+                  "value": {
+                    "query": "What is its punishment?",
+                    "session_id": "demo-session-1"
+                  }
+                },
+                "moderate": {
+                  "summary": "MODERATE — two provisions / mapping",
+                  "value": {
+                    "query": "Explain the difference between Article 14 and Article 21."
+                  }
+                },
+                "refusal": {
+                  "summary": "Safety guard (redirected, no retrieval)",
+                  "value": {
+                    "query": "Will I win my cheating case?"
+                  }
+                },
+                "simple": {
+                  "summary": "SIMPLE — single provision lookup",
+                  "value": {
+                    "query": "What is the punishment for cheating under Section 420 IPC?"
+                  }
+                }
+              },
+              "schema": {
+                "$ref": "#/components/schemas/ChatRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "text/plain": {
+                "example": "Section 420 IPC punishes cheating…"
+              }
+            },
+            "description": "text/plain token stream"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "authentication_failed",
+                    "message": "Invalid or missing credentials.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired bearer token"
+          },
+          "404": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "not_found",
+                    "message": "The requested resource was not found.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Not found (or not owned by the caller) / disabled"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "payload_too_large",
+                    "message": "Request body is too large.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request body too large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "validation_error",
+                    "message": "The request is invalid.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Validation error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "rate_limited",
+                    "message": "Too many requests. Please retry later.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Rate limit exceeded (see Retry-After)"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "llm_provider_error",
+                    "message": "The language model provider failed to respond.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "LLM provider failure after retries/fallback"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "vector_store_error",
+                    "message": "The document index is unavailable.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "A required dependency is unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "timeout",
+                    "message": "The request took too long to process.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Pipeline timeout"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Legacy plain-text token stream",
+        "tags": [
+          "Chat"
+        ]
+      }
+    },
+    "/api/v1/search": {
+      "get": {
+        "description": "Same as POST /api/v1/search with only `query` and `top_k`.",
+        "operationId": "search_get_api_v1_search_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "query",
+            "required": true,
+            "schema": {
+              "maxLength": 8000,
+              "minLength": 1,
+              "title": "Query",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "top_k",
+            "required": false,
+            "schema": {
+              "default": 10,
+              "maximum": 50,
+              "minimum": 1,
+              "title": "Top K",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "authentication_failed",
+                    "message": "Invalid or missing credentials.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired bearer token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "validation_error",
+                    "message": "The request is invalid.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Validation error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "rate_limited",
+                    "message": "Too many requests. Please retry later.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Rate limit exceeded (see Retry-After)"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "vector_store_error",
+                    "message": "The document index is unavailable.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "A required dependency is unavailable"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Search (GET, legacy)",
+        "tags": [
+          "Search"
+        ]
+      },
+      "post": {
+        "description": "Structured hybrid retrieval through the canonical pipeline in **search mode**: routing, query planning, dense + sparse + exact-provision (+ graph) retrieval, fusion, reranking and context selection — **no LLM call** unless `generate_answer` is true (planning is rule-based). Use `diagnostics` to see which retrieval stages actually ran and how many candidates each produced.",
+        "operationId": "search_api_v1_search_post",
+        "parameters": [
+          {
+            "description": "Legacy: query as URL parameter",
+            "in": "query",
+            "name": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 8000,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Legacy: query as URL parameter",
+              "title": "Query"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "examples": {
+                "complex": {
+                  "summary": "Complex query (rule-based decomposition, still no LLM)",
+                  "value": {
+                    "query": "Compare IPC 420 and BNS 318 and explain the impact of the change",
+                    "top_k": 8
+                  }
+                },
+                "concept": {
+                  "summary": "Concept search",
+                  "value": {
+                    "query": "punishment for theft",
+                    "top_k": 5
+                  }
+                },
+                "filtered": {
+                  "summary": "Filtered to one act",
+                  "value": {
+                    "filters": {
+                      "acts": [
+                        "BNS"
+                      ]
+                    },
+                    "query": "punishment for murder",
+                    "top_k": 5
+                  }
+                },
+                "provision": {
+                  "summary": "Exact provision (metadata + dense + sparse)",
+                  "value": {
+                    "query": "Section 302 IPC",
+                    "top_k": 5
+                  }
+                }
+              },
+              "schema": {
+                "anyOf": [
+                  {
+                    "$ref": "#/components/schemas/SearchRequest"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ],
+                "title": "Body"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SearchResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "authentication_failed",
+                    "message": "Invalid or missing credentials.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired bearer token"
+          },
+          "413": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "payload_too_large",
+                    "message": "Request body is too large.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Request body too large"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "validation_error",
+                    "message": "The request is invalid.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Validation error"
+          },
+          "429": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "rate_limited",
+                    "message": "Too many requests. Please retry later.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Rate limit exceeded (see Retry-After)"
+          },
+          "502": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "llm_provider_error",
+                    "message": "The language model provider failed to respond.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "LLM provider failure after retries/fallback"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "vector_store_error",
+                    "message": "The document index is unavailable.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "A required dependency is unavailable"
+          },
+          "504": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "timeout",
+                    "message": "The request took too long to process.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Pipeline timeout"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Search legal sources",
+        "tags": [
+          "Search"
+        ]
+      }
+    },
+    "/api/v1/statute/map": {
+      "get": {
+        "description": "IPC↔BNS, CrPC↔BNSS and IEA↔BSA from the curated mapping dataset (cross-checked with the knowledge graph when enabled). `mapping_type` is exact / approximate / no_mapping / ambiguous / unknown — the service never invents a correspondence. Examples: `IPC 302`, `IPC 304A`, `CrPC 438`, `BNS 318`.",
+        "operationId": "map_statute_api_v1_statute_map_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "code",
+            "required": true,
+            "schema": {
+              "examples": [
+                "IPC"
+              ],
+              "maxLength": 40,
+              "minLength": 2,
+              "title": "Code",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "section",
+            "required": true,
+            "schema": {
+              "examples": [
+                "304A"
+              ],
+              "maxLength": 16,
+              "minLength": 1,
+              "pattern": "^\\d{1,4}[A-Za-z]{0,3}(\\(\\d{1,3}\\))?$",
+              "title": "Section",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BnsAlert"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "401": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "authentication_failed",
+                    "message": "Invalid or missing credentials.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Missing, invalid or expired bearer token"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": {
+                    "code": "validation_error",
+                    "message": "The request is invalid.",
+                    "request_id": "3f1c9a7e2b8d4c55a6f0e1d2c3b4a596"
+                  }
+                },
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "description": "Validation error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Map a provision between old and new criminal codes",
+        "tags": [
+          "Statutes"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "description": "Returns `healthy` whenever the process is serving requests. It never depends on external services; use `/ready` for dependency state.",
+        "operationId": "health_health_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Liveness probe",
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/ready": {
+      "get": {
+        "description": "Checks the dependencies required to serve requests: application, embedding model, Qdrant collection, database and LLM configuration (credentials present; no LLM call is made). The optional knowledge graph is reported but never blocks readiness. Returns **503** with `failed` listing the unusable required components.",
+        "operationId": "ready_ready_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "503": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadinessResponse"
+                }
+              }
+            },
+            "description": "A required dependency is unavailable"
+          }
+        },
+        "summary": "Readiness probe",
+        "tags": [
+          "Health"
+        ]
+      }
+    }
+  },
+  "tags": [
+    {
+      "description": "Service identity, liveness and readiness probes.",
+      "name": "Health"
+    },
+    {
+      "description": "Signup/login with bcrypt + signed JWT. Use **Authorize** for protected endpoints.",
+      "name": "Authentication"
+    },
+    {
+      "description": "Grounded legal Q&A through the single LangGraph pipeline (JSON or SSE).",
+      "name": "Chat"
+    },
+    {
+      "description": "Persisted chat history, scoped to the authenticated user.",
+      "name": "Conversations"
+    },
+    {
+      "description": "Hybrid retrieval only (no LLM unless requested) with stage diagnostics.",
+      "name": "Search"
+    },
+    {
+      "description": "IPC↔BNS, CrPC↔BNSS, IEA↔BSA provision mapping with provenance.",
+      "name": "Statutes"
+    },
+    {
+      "description": "Development checks for Qdrant, embeddings, LLM, routing and config. Disabled in production unless DIAGNOSTICS_ENABLED=true.",
+      "name": "Diagnostics"
+    }
+  ]
+}

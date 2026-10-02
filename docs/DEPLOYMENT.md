@@ -1,13 +1,34 @@
 # Deployment
 
-## Container
+```
+Browser ── HTTPS reverse proxy ── frontend static files (nginx / CDN)
+                              └── FastAPI backend ── Qdrant · PostgreSQL · Groq · (Neo4j)
+```
+
+## Containers
 
 ```bash
 docker build -t legal-lens-api .                          # add --build-arg PRELOAD_MODELS=true to bake models in
+docker build -t legal-lens-web ./frontend                 # static build behind nginx, /api proxied to the backend
 docker run --env-file .env -p 8000:8000 -v ll-data:/app/data -v ll-models:/models/hf legal-lens-api
-docker compose up                                          # API with embedded Qdrant on a volume
+docker compose up --build                                  # web :8080 + api :8000 (embedded Qdrant on a volume)
 docker compose --profile qdrant up                         # plus a Qdrant server (set QDRANT_URL=http://qdrant:6333)
 ```
+
+## Frontend hosting options
+
+1. **Separate static hosting (recommended).** `cd frontend && VITE_API_URL=https://api.example.com npm run build`
+   and publish `dist/` (nginx, S3+CloudFront, Netlify…). Add the site origin to the backend
+   `CORS_ORIGINS`. Streaming works over CORS; keep any proxy's response buffering off for
+   `/api/v1/chat/stream` (`frontend/nginx.conf` shows the settings).
+2. **Same origin behind nginx.** `frontend/Dockerfile` serves `dist/` and proxies `/api`, `/health`,
+   `/ready` to the `api` service, so `VITE_API_URL` stays empty and no CORS is involved.
+3. **Served by the backend.** Set `FRONTEND_DIST_PATH=/path/to/frontend/dist`; the API process serves
+   the SPA with history fallback (API routes keep precedence). Convenient for single-container
+   hosts (Procfile deploys); less efficient than a CDN.
+
+Frontend environment is public-safe only (`VITE_*`). Never place provider keys, the JWT secret or
+database URLs in it; CI greps the bundle for secret-looking strings.
 
 The image runs as a non-root user, contains no secrets (`.env` is excluded by `.dockerignore`),
 exposes 8000 and has a `/health` HEALTHCHECK. Use `/ready` for load-balancer readiness.
