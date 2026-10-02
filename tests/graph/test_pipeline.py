@@ -130,7 +130,7 @@ async def test_session_memory_resolves_follow_up(container: Container) -> None:
 async def test_streaming_emits_real_tokens_and_done(container: Container) -> None:
     events = [e async for e in container.pipeline.stream("r", "Explain Section 420 IPC", PipelineOptions())]
     types = [e["type"] for e in events]
-    assert types[0] == "start" and types[-1] == "done"
+    assert types[0] == "start" and types[-1] == "complete"
     for stage in ("intent", "safety", "complexity", "plan", "retrieval", "evidence"):
         assert stage in types
     tokens = [e["content"] for e in events if e["type"] == "token"]

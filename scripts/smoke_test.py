@@ -139,7 +139,7 @@ class Smoke:
                     types.append(json.loads(line[6:])["type"])
         if types and types[-1] == "error":
             return BLOCKED, "stream ended with an error event (see server log)"
-        assert types and types[0] == "start" and types[-1] == "done", f"unexpected event sequence {types[:3]}...{types[-2:]}"
+        assert types and types[0] == "start" and types[-1] == "complete", f"unexpected event sequence {types[:3]}...{types[-2:]}"
         if types.count("token") <= 1:
             return FAIL, "no LLM token stream (only a fixed message was returned)"
         return PASS, f"{len(types)} events, {types.count('token')} token events from the LLM, ended with done"

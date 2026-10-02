@@ -71,13 +71,13 @@ async def test_chat_sse_stream(client: httpx.AsyncClient) -> None:
         assert resp.status_code == 200 and resp.headers["content-type"].startswith("text/event-stream")
         events = [json.loads(line[6:]) async for line in resp.aiter_lines() if line.startswith("data: ")]
     types = [e["type"] for e in events]
-    assert types[0] == "start" and types[-1] == "done" and types.count("token") > 3
+    assert types[0] == "start" and types[-1] == "complete" and types.count("token") > 3
     assert "citation" in types
 
 
 async def test_chat_stream_endpoint_and_accept_header(client: httpx.AsyncClient) -> None:
     resp = await client.post("/api/v1/chat/stream", json={"query": "Explain Section 420 IPC"})
-    assert '"type": "done"' in resp.text
+    assert '"type": "complete"' in resp.text
     resp = await client.post("/api/v1/chat", json={"query": "Explain Section 420 IPC"},
                              headers={"Accept": "text/event-stream"})
     assert resp.headers["content-type"].startswith("text/event-stream")

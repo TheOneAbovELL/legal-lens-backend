@@ -33,6 +33,8 @@ from app.rag.retrieval.retrievers import DenseRetriever, GraphRetriever, Metadat
 from app.rag.sparse import SparseEncoder
 from app.schemas.system import ComponentStatus, ReadinessResponse
 from app.services.auth import AuthService
+from app.services.chat import ChatService
+from app.services.conversations import ConversationService
 from app.services.generation import AnswerGenerator
 from app.services.legal_mapping import LegalProvisionMapper
 from app.services.safety import SafetyGuard
@@ -171,6 +173,8 @@ class Container:
         self.services = services
         self.pipeline = PipelineService(build_graph(services), timeout=settings.pipeline_timeout, memory=self.memory,
                                         diagnostics=settings.diagnostics)
+        self.conversations = ConversationService(self.database)
+        self.chat = ChatService(self.pipeline, self.conversations)
         self.ingestion = IngestionService(
             embedder=self.embedder, store=self.store, sparse=self.sparse, llm=self.llm,
             embed_batch_size=settings.embedding_batch_size * 4, upsert_batch_size=settings.qdrant_upsert_batch_size,

@@ -54,7 +54,7 @@ def label(event: dict) -> str:
         return f"[STATUS] {event.get('message')}"
     if t == "error":
         return f"[ERROR] {event.get('code')}: {event.get('message')}"
-    if t == "done":
+    if t == "complete":
         return f"[COMPLETE] refused={event.get('refused')} citations={len(event.get('citations', []))}"
     return f"[{str(t).upper()}] {event}"
 
@@ -108,7 +108,7 @@ def main() -> int:
                     in_tokens = False
                 if not args.raw:
                     print(label(event))
-                if event["type"] in ("done", "error"):
+                if event["type"] in ("complete", "error"):
                     final = event
     except httpx.HTTPError as exc:
         print(f"\n[STREAM FAILED] {type(exc).__name__}: {exc}")

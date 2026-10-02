@@ -15,7 +15,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.errors import install_error_handlers
 from app.api.middleware import RequestContextMiddleware
 from app.api.rate_limit import SlidingWindowRateLimiter
-from app.api.v1 import auth, chat, diagnostics, health, search, statutes
+from app.api.v1 import auth, chat, conversations, diagnostics, health, search, statutes
 from app.container import Container
 from app.core.config import Settings, get_settings
 from app.core.logging import configure_logging, get_logger
@@ -40,6 +40,7 @@ TAGS = [
     {"name": "Authentication",
      "description": "Signup/login with bcrypt + signed JWT. Use **Authorize** for protected endpoints."},
     {"name": "Chat", "description": "Grounded legal Q&A through the single LangGraph pipeline (JSON or SSE)."},
+    {"name": "Conversations", "description": "Persisted chat history, scoped to the authenticated user."},
     {"name": "Search", "description": "Hybrid retrieval only (no LLM unless requested) with stage diagnostics."},
     {"name": "Statutes", "description": "IPC↔BNS, CrPC↔BNSS, IEA↔BSA provision mapping with provenance."},
     {"name": "Diagnostics", "description": "Development checks for Qdrant, embeddings, LLM, routing and config. "
@@ -101,14 +102,15 @@ def create_app(
         CORSMiddleware,
         allow_origins=settings.cors_origins,
         allow_credentials=True,
-        allow_methods=["GET", "POST", "OPTIONS"],
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["Authorization", "Content-Type", "Accept", "X-Request-ID"],
         expose_headers=["X-Request-ID", "Retry-After"],
     )
     app.add_middleware(RequestContextMiddleware, max_body_bytes=settings.max_request_bytes)
 
     app.include_router(health.router)
-    for router in (auth.router, chat.router, search.router, statutes.router, diagnostics.router):
+    for router in (auth.router, chat.router, conversations.router, search.router, statutes.router,
+                   diagnostics.router):
         app.include_router(router, prefix="/api/v1")
     return app
 

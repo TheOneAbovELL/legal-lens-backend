@@ -77,6 +77,18 @@ class Citation(BaseModel):
     chunk_id: str | None = None
     retrieval_sources: list[str] = Field(default_factory=list)
     score: float | None = None
+    excerpt: str = Field(default="", description="Leading text of the cited passage (bounded)")
+
+
+EXCERPT_CHARS = 700
+
+
+def make_excerpt(text: str, limit: int = EXCERPT_CHARS) -> str:
+    text = " ".join(text.split())
+    if len(text) <= limit:
+        return text
+    cut = text[:limit]
+    return cut[: cut.rfind(" ")] + "…" if " " in cut else cut + "…"
 
 
 class EvidenceItem(BaseModel):
@@ -103,6 +115,7 @@ class EvidenceItem(BaseModel):
             chunk_id=md.chunk_id,
             retrieval_sources=self.chunk.sources,
             score=round(self.chunk.final_score, 6),
+            excerpt=make_excerpt(self.chunk.content),
         )
 
 

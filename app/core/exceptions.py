@@ -99,6 +99,12 @@ class AuthorizationError(AppError):
     public_message = "You are not allowed to perform this action."
 
 
+class NotFoundError(AppError):
+    code = "not_found"
+    http_status = 404
+    public_message = "The requested resource was not found."
+
+
 class ConflictError(AppError):
     code = "conflict"
     http_status = 409

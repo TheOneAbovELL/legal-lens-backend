@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Literal
+
 from pydantic import AliasChoices, BaseModel, Field
 
 from app.domain.retrieval import Citation
@@ -37,10 +39,52 @@ class ChatRequest(BaseModel):
                     "json_schema_extra": {"example": CHAT_EXAMPLES["simple"]["value"]}}
 
 
+class QueryAnalysis(BaseModel):
+    """Public query analysis: what the router decided, never how the model reasoned."""
+
+    intent: str | None = None
+    complexity: str | None = Field(default=None, description="SIMPLE | MODERATE | COMPLEX")
+    confidence: float | None = None
+    route: str | None = None
+    retrieval_profile: str | None = Field(default=None, description="FAST | BALANCED | DEEP")
+    safety_decision: str | None = None
+    jurisdiction: str = "IN"
+    outside_jurisdiction: bool = False
+    decomposition_needed: bool = False
+    comparison_required: bool = False
+    provisions: list[str] = Field(default_factory=list, description="Provisions/articles detected in the question")
+    follow_up: bool = False
+
+    @classmethod
+    def from_metadata(cls, meta: PipelineMetadata) -> QueryAnalysis:
+        c, s = meta.complexity, meta.safety
+        return cls(
+            intent=meta.intent.intent.value if meta.intent else None,
+            complexity=c.complexity.value if c else None,
+            confidence=round(c.confidence, 3) if c else None,
+            route=meta.route,
+            retrieval_profile=meta.retrieval_profile,
+            safety_decision=s.decision.value if s else None,
+            outside_jurisdiction=bool(s and "foreign_jurisdiction" in s.categories),
+            decomposition_needed=bool(c and c.requires_decomposition),
+            comparison_required=bool(c and c.features.get("comparison", 0) > 0),
+            provisions=[e.raw for e in (c.detected_entities if c else [])][:10],
+            follow_up=meta.follow_up,
+        )
+
+
+ChatStatus = Literal["complete", "refused", "insufficient_evidence", "small_talk"]
+
+
 class ChatResponse(BaseModel):
     answer: str | None = Field(description="Grounded answer with [C#] evidence and [M#] mapping citations")
     source: str = Field(description="Legacy field: 'qdrant' when answered from indexed evidence, else 'none'")
     request_id: str
+    conversation_id: str | None = Field(default=None, description="Persisted conversation (authenticated callers)")
+    message_id: str | None = Field(default=None, description="Persisted assistant message id, when persisted")
+    persisted: bool = Field(default=False, description="False for anonymous/stateless requests")
+    status: ChatStatus = "complete"
+    analysis: QueryAnalysis
     refused: bool = Field(description="True when the safety guard redirected the request")
     citations: list[Citation] = Field(description="Only evidence actually cited in the answer")
     bns_alerts: list[BnsAlert] = Field(description="IPC/CrPC/IEA -> BNS/BNSS/BSA alerts with provenance")

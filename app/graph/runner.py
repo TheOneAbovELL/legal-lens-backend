@@ -208,6 +208,37 @@ def build_result(state: PipelineState, latency_ms: float) -> PipelineResult:
     )
 
 
+def result_status(result: PipelineResult) -> str:
+    """complete | refused | insufficient_evidence | small_talk — the frontend renders each differently."""
+    if result.refused:
+        return "refused"
+    meta = result.metadata
+    if meta.intent is not None and meta.intent.intent.value == "small_talk":
+        return "small_talk"
+    if meta.evidence is not None and not meta.evidence.sufficient:
+        return "insufficient_evidence"
+    return "complete"
+
+
+def analysis_summary(state: dict[str, Any]) -> dict[str, Any]:
+    """Public query analysis (typed in app/schemas/chat.py as QueryAnalysis)."""
+    intent, safety, complexity, profile, route = (state.get(k) for k in ("intent", "safety", "complexity", "profile", "route"))
+    return {
+        "intent": intent.intent.value if intent else None,
+        "complexity": complexity.complexity.value if complexity else None,
+        "confidence": round(complexity.confidence, 3) if complexity else None,
+        "route": route.value if route else None,
+        "retrieval_profile": profile.name if profile else None,
+        "safety_decision": safety.decision.value if safety else None,
+        "jurisdiction": "IN",
+        "outside_jurisdiction": bool(safety and "foreign_jurisdiction" in safety.categories),
+        "decomposition_needed": bool(complexity and complexity.requires_decomposition),
+        "comparison_required": bool(complexity and complexity.features.get("comparison", 0) > 0),
+        "provisions": [e.raw for e in (complexity.detected_entities if complexity else [])][:10],
+        "follow_up": bool(state.get("follow_up", False)),
+    }
+
+
 def trim_for_public(result: PipelineResult) -> PipelineResult:
     """Production view: drops diagnostic detail (sub-queries, timings, errors, stage diagnostics)."""
     meta = result.metadata.model_copy(update={"subqueries": [], "timings_ms": {}, "errors": [],
@@ -298,8 +329,8 @@ class PipelineService:
         return build_result(state, latency)
 
     async def stream(self, request_id: str, query: str, options: PipelineOptions) -> AsyncIterator[dict[str, Any]]:
-        """Yield public events: start, intent, safety, complexity, plan, retrieval, evidence,
-        bns_alert, token (real LLM deltas), citation, validation, done | error."""
+        """Yield public events: start, intent, safety, complexity, analysis, plan, retrieval, reranking,
+        evidence, bns_alert, token (real LLM deltas), citation, validation, complete | error."""
         start = time.perf_counter()
         options = options.model_copy(update={"streaming": True})
         state_data: dict[str, Any] = self._initial(request_id, query, options)
@@ -319,6 +350,8 @@ class PipelineService:
                         event = _stage_event(node, update)
                         if event:
                             yield event
+                        if node == "classify":
+                            yield {"type": "analysis", **analysis_summary(state_data)}
                         if node in ("refuse", "small_talk", "insufficient") and update.get("answer"):
                             # Fixed (non-generated) message: delivered as one token event so token-
                             # concatenating clients render it; this is not simulated streaming.
@@ -345,7 +378,8 @@ class PipelineService:
             v = result.metadata.output_validation
             yield {"type": "validation", "valid": v.valid, "warnings": v.warnings,
                    "invalid_citation_ids": v.invalid_citation_ids}
-        yield {"type": "done", **result.model_dump(mode="json", exclude={"evidence"})}
+        yield {"type": "complete", "status": result_status(result),
+               **result.model_dump(mode="json", exclude={"evidence"})}
 
 
 _REDUCED = {"warnings", "errors"}

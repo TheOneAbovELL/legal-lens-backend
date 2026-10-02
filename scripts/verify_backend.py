@@ -268,7 +268,7 @@ async def run_http_checks(v: Verifier) -> None:
                 if line.startswith("data: "):
                     types.append(json.loads(line[6:])["type"])
         tokens = types.count("token")
-        ok = types[:1] == ["start"] and types[-1:] == ["done"] and tokens > 1
+        ok = types[:1] == ["start"] and types[-1:] == ["complete"] and tokens > 1
         return (PASS if ok else FAIL), f"{len(types)} events, {tokens} token events, last={types[-1] if types else None}"
 
     for name, fn in (("Root endpoint", root), ("Health", health), ("Readiness", readiness), ("OpenAPI / docs", openapi),

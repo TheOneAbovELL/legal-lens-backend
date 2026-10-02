@@ -23,7 +23,7 @@ def _err(description: str, code: str, message: str) -> dict:
 ERROR_RESPONSES: dict[int | str, dict] = {
     401: _err("Missing, invalid or expired bearer token", "authentication_failed", "Invalid or missing credentials."),
     403: _err("Not allowed", "forbidden", "Self-registration is disabled."),
-    404: _err("Not found / disabled", "not_found", "Diagnostics are disabled in this environment."),
+    404: _err("Not found (or not owned by the caller) / disabled", "not_found", "The requested resource was not found."),
     409: _err("Conflict", "conflict", "Username or email is already registered."),
     413: _err("Request body too large", "payload_too_large", "Request body is too large."),
     422: _err("Validation error", "validation_error", "The request is invalid."),
