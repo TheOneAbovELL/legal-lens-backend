@@ -1,16 +1,15 @@
-import { useState, type FormEvent } from "react";
+import { useEffect, useState, type FormEvent } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { Badge, ComplexityBadge } from "@/components/ui/Badge";
+import { ChevronDown, Search } from "lucide-react";
 import { Button } from "@/components/ui/Button";
-import { Alert, Skeleton } from "@/components/ui/Card";
-import { Input } from "@/components/ui/Field";
-import { SourceCard } from "@/features/citations/SourceCard";
+import { Input, Select } from "@/components/ui/Field";
+import { Notice, Skeleton } from "@/components/ui/Feedback";
+import { EvidenceCard } from "@/features/evidence/EvidenceCard";
 import { searchApi } from "@/lib/api";
 import { describeError } from "@/lib/utils/errors";
-import { formatMs } from "@/lib/utils/format";
 import type { SearchFilters, SearchResponse } from "@/types/api";
-import { SearchResultCard } from "./SearchResultCard";
+import { SearchResult } from "./SearchResult";
 
 const ACTS = ["", "IPC", "BNS", "CRPC", "BNSS", "IEA", "BSA", "CONSTITUTION"];
 const TYPES = ["", "statute", "constitution", "case_law", "regulation", "commentary", "other"];
@@ -26,8 +25,14 @@ export function SearchPage() {
 
   const search = useMutation({
     mutationFn: (body: { query: string; filters: SearchFilters | null }) => searchApi.search({ query: body.query, top_k: 10, filters: body.filters }),
-    onSuccess: () => setSelected(null),
+    onSuccess: () => setSelected(0),
   });
+  // A shared link (/app/search?q=…) runs its query on arrival.
+  const initial = params.get("q");
+  useEffect(() => {
+    if (initial?.trim()) search.mutate({ query: initial.trim(), filters: null });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const submit = (e?: FormEvent) => {
     e?.preventDefault();
@@ -47,69 +52,60 @@ export function SearchPage() {
 
   return (
     <div className="page">
-      <div className="page__inner">
-        <h1>Search legal evidence</h1>
-        <p className="page__lead">Retrieval only — the same hybrid engine that grounds chat answers, without generation.</p>
-        <form onSubmit={submit} className="stack" aria-label="Search">
+      <div className="page__col">
+        <div className="page__head">
+          <h1 className="t-title">Search legal sources</h1>
+          <p className="page__lead">Explore the connected corpus directly. The same retrieval that grounds answers, without generation.</p>
+        </div>
+        <form onSubmit={submit} aria-label="Search">
           <div className="searchbar">
-            <label htmlFor="search-input" className="visually-hidden">Search query</label>
+            <label htmlFor="search-input" className="sr-only">Search query</label>
             <input id="search-input" className="input" value={query} onChange={(e) => setQuery(e.target.value)}
-              placeholder="e.g. Section 420 IPC, punishment for theft, Article 21" data-testid="search-input" />
-            <Button type="submit" variant="primary" loading={search.isPending} disabled={!query.trim()} data-testid="search-button">Search</Button>
+              placeholder="Section 420 IPC · punishment for theft · Article 21" data-testid="search-input" autoFocus />
+            <Button type="submit" variant="primary" size="lg" icon={<Search />} loading={search.isPending} disabled={!query.trim()} data-testid="search-button">Search</Button>
           </div>
           <details>
-            <summary style={{ cursor: "pointer", color: "var(--text-muted)", fontSize: 14 }}>Filters</summary>
-            <div className="filters" style={{ marginTop: 12 }}>
-              <div className="field">
-                <label className="field__label" htmlFor="filter-act">Act</label>
-                <select id="filter-act" className="input" value={act} onChange={(e) => setAct(e.target.value)}>
-                  {ACTS.map((a) => <option key={a} value={a}>{a || "Any act"}</option>)}
-                </select>
-              </div>
+            <summary className="filters__toggle"><ChevronDown />Filters</summary>
+            <div className="filters">
+              <Select id="filter-act" label="Act" value={act} onChange={(e) => setAct(e.target.value)}>
+                {ACTS.map((a) => <option key={a} value={a}>{a || "Any act"}</option>)}
+              </Select>
               <Input id="filter-section" label="Section / Article" value={section} onChange={(e) => setSection(e.target.value)} placeholder="e.g. 420" />
-              <div className="field">
-                <label className="field__label" htmlFor="filter-type">Document type</label>
-                <select id="filter-type" className="input" value={docType} onChange={(e) => setDocType(e.target.value)}>
-                  {TYPES.map((t) => <option key={t} value={t}>{t ? t.replace("_", " ") : "Any type"}</option>)}
-                </select>
-              </div>
+              <Select id="filter-type" label="Document type" value={docType} onChange={(e) => setDocType(e.target.value)}>
+                {TYPES.map((t) => <option key={t} value={t}>{t ? t.replace("_", " ") : "Any type"}</option>)}
+              </Select>
             </div>
           </details>
         </form>
 
         {search.isPending ? <div className="stack"><Skeleton lines={3} /><Skeleton lines={3} /></div> : null}
         {error ? (
-          <Alert tone="danger" title={error.title} action={error.retryable ? <Button size="sm" onClick={() => submit()}>Retry</Button> : undefined}>{error.message}</Alert>
+          <Notice tone="danger" title={error.title} action={error.retryable ? <Button variant="secondary" size="sm" onClick={() => submit()}>Retry</Button> : undefined}>{error.message}</Notice>
         ) : null}
         {data ? (
           <>
-            <div className="row" style={{ fontSize: 13, color: "var(--text-muted)" }} data-testid="search-meta">
-              <span>{data.total} result{data.total === 1 ? "" : "s"}</span>
-              <span>· {formatMs(data.processing_time_ms)}</span>
-              <ComplexityBadge complexity={data.retrieval_metadata.complexity} />
-              {data.retrieval_metadata.strategy ? <Badge>{data.retrieval_metadata.strategy}</Badge> : null}
-              {Object.entries(data.retrieval_metadata.sources).map(([name, hits]) => (
-                <Badge key={name} title={`${hits} hits from ${name} retrieval`}>{name}: {hits}</Badge>
-              ))}
-              {data.retrieval_metadata.reranker ? <Badge title="Reranker">rerank: {data.retrieval_metadata.reranker}</Badge> : null}
+            <div className="results-meta" data-testid="search-meta">
+              <span>{data.total} result{data.total === 1 ? "" : "s"} for “{data.query}”</span>
+              {data.retrieval_metadata.complexity ? <span>· {data.retrieval_metadata.complexity.toLowerCase()} query</span> : null}
+              {data.retrieval_metadata.subqueries > 1 ? <span>· {data.retrieval_metadata.subqueries} sub-queries</span> : null}
+              <span>· {Object.keys(data.retrieval_metadata.sources).filter((k) => (data.retrieval_metadata.sources[k] ?? 0) > 0).length > 1 ? "hybrid retrieval" : "retrieval"}</span>
             </div>
-            {data.warnings.map((w) => <Alert key={w} tone="warning">{w}</Alert>)}
+            {data.warnings.map((w) => <Notice key={w} tone="warn">{w}</Notice>)}
             {data.results.length === 0 ? (
-              <Alert tone="info">No matching legal evidence was found in the connected corpus.</Alert>
+              <Notice>No matching legal evidence was found in the connected corpus. Try naming the Act and section, or remove a filter.</Notice>
             ) : (
-              <div className="grid-2">
+              <div className="results-grid">
                 <div className="results" data-testid="search-results">
                   {data.results.map((r, i) => (
-                    <SearchResultCard key={r.chunk_id} result={r} query={data.query} selected={selected === i}
-                      onSelect={() => setSelected(i)}
-                      onUseInChat={() => navigate("/app", { state: { prefill: `${data.query} (see ${r.citation.act ?? ""} ${r.citation.section ?? r.citation.title})`.trim() } })} />
+                    <SearchResult key={r.chunk_id} result={r} query={data.query} selected={selected === i} onSelect={() => setSelected(i)}
+                      onUseInResearch={() => navigate("/app", { state: { prefill: `${data.query} (see ${r.citation.act ?? ""} ${r.citation.section ?? r.citation.title})`.trim() } })} />
                   ))}
                 </div>
-                <div>
+                <div className="results-aside">
                   {current ? (
-                    <SourceCard citation={{ ...current.citation, excerpt: current.content }} question={data.query} selected />
+                    <EvidenceCard citation={{ ...current.citation, excerpt: current.content }} question={data.query} selected />
                   ) : (
-                    <div className="evidence__empty">Select a result to inspect the full passage.</div>
+                    <div className="ev__empty"><strong>No passage selected</strong>Select a result to read the full passage.</div>
                   )}
                 </div>
               </div>
