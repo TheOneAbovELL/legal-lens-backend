@@ -1,0 +1,7 @@
+# Default reviewers for every change. Add more owners per path as the team grows.
+*                       @TheOneAbovELL
+
+# Security-sensitive areas: configuration, auth, CI.
+/app/core/              @TheOneAbovELL
+/app/services/auth.py   @TheOneAbovELL
+/.github/               @TheOneAbovELL

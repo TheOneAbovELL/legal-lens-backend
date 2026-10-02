@@ -1,5 +1,7 @@
 # Legal Lens
 
+[![CI](https://github.com/TheOneAbovELL/legal-lens-backend/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/TheOneAbovELL/legal-lens-backend/actions/workflows/ci.yml)
+
 Evidence-grounded legal research assistant for Indian law: a FastAPI + LangGraph backend with one
 canonical retrieval-augmented pipeline (Qdrant, BGE-M3, Groq) and a React/TypeScript web client,
 in one repository. Every answer is built from retrieved, cited evidence that the user can inspect.
