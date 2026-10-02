@@ -1,0 +1,38 @@
+[project]
+name = "legal-lens-backend"
+version = "2.0.0"
+description = "Legal Lens: grounded legal information RAG backend for Indian law"
+requires-python = ">=3.11"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+markers = [
+    "live: requires live external services (set LIVE_TESTS=1 and credentials)",
+    "model: downloads/loads real ML models (set MODEL_TESTS=1)",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore:Payload indexes have no effect in the local Qdrant:UserWarning",
+]
+
+[tool.ruff]
+line-length = 130
+target-version = "py311"
+extend-exclude = ["venv", "alembic/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "ASYNC", "S"]
+ignore = [
+    "S101",   # asserts are used for internal invariants and tests
+    "B008",   # FastAPI Depends/Query defaults
+    "UP040",  # keep TypeAlias style compatible
+]
+
+[tool.ruff.lint.isort]
+known-third-party = ["alembic"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["S105", "S106", "E501"]
+"scripts/**" = ["S603", "S607", "E501"]

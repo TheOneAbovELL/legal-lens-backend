@@ -1,0 +1,30 @@
+{
+  "default": "hierarchical-400",
+  "_comment": "Production default respects the 120-512 token target agreed in MoM 2026-01-09. Other profiles form the evaluation matrix; sizes are approximate tokens.",
+  "profiles": [
+    {"name": "fixed-300-50",   "strategy": "fixed", "chunk_size": 300,  "overlap": 50},
+    {"name": "fixed-500-100",  "strategy": "fixed", "chunk_size": 500,  "overlap": 100},
+    {"name": "fixed-800-100",  "strategy": "fixed", "chunk_size": 800,  "overlap": 100},
+    {"name": "fixed-1200-150", "strategy": "fixed", "chunk_size": 1200, "overlap": 150},
+    {"name": "fixed-500-100-naive", "strategy": "fixed", "chunk_size": 500, "overlap": 100, "params": {"respect_structure": false}},
+
+    {"name": "sentence-250", "strategy": "sentence", "chunk_size": 250, "overlap": 30, "min_chunk_tokens": 40},
+    {"name": "sentence-400", "strategy": "sentence", "chunk_size": 400, "overlap": 50, "min_chunk_tokens": 60},
+
+    {"name": "recursive-500-50",   "strategy": "recursive", "chunk_size": 500,  "overlap": 50,  "min_chunk_tokens": 60},
+    {"name": "recursive-800-100",  "strategy": "recursive", "chunk_size": 800,  "overlap": 100, "min_chunk_tokens": 80},
+    {"name": "recursive-1200-150", "strategy": "recursive", "chunk_size": 1200, "overlap": 150, "min_chunk_tokens": 120},
+
+    {"name": "semantic-p90-400", "strategy": "semantic", "chunk_size": 400, "min_chunk_tokens": 40, "params": {"threshold_type": "percentile", "threshold": 90}},
+    {"name": "semantic-p75-400", "strategy": "semantic", "chunk_size": 400, "min_chunk_tokens": 40, "params": {"threshold_type": "percentile", "threshold": 75}},
+    {"name": "semantic-abs035-400", "strategy": "semantic", "chunk_size": 400, "min_chunk_tokens": 40, "params": {"threshold_type": "absolute", "threshold": 0.35}},
+
+    {"name": "sliding-5-3", "strategy": "sliding_window", "chunk_size": 512, "params": {"window": 5, "stride": 3}},
+    {"name": "sliding-3-2", "strategy": "sliding_window", "chunk_size": 512, "params": {"window": 3, "stride": 2}},
+
+    {"name": "hierarchical-400", "strategy": "hierarchical", "chunk_size": 400, "overlap": 40, "min_chunk_tokens": 40, "params": {"parent_max_tokens": 1500}},
+    {"name": "hierarchical-250", "strategy": "hierarchical", "chunk_size": 250, "overlap": 25, "min_chunk_tokens": 30, "params": {"parent_max_tokens": 1000}},
+
+    {"name": "ai-400", "strategy": "ai", "chunk_size": 400, "params": {"max_llm_calls": 50}}
+  ]
+}

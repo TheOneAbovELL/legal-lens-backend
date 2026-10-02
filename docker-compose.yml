@@ -1,0 +1,27 @@
+# Local stack. By default the API uses an embedded Qdrant on a volume; start the optional
+# Qdrant server with:  docker compose --profile qdrant up   (and set QDRANT_URL=http://qdrant:6333)
+services:
+  api:
+    build: .
+    env_file: .env
+    environment:
+      QDRANT_PATH: /app/data/qdrant
+      DATABASE_URL: sqlite+aiosqlite:////app/data/legal_lens.db
+    ports:
+      - "8000:8000"
+    volumes:
+      - app-data:/app/data
+      - hf-models:/models/hf
+    restart: unless-stopped
+  qdrant:
+    image: qdrant/qdrant:v1.15.4
+    profiles: ["qdrant"]
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant-data:/qdrant/storage
+
+volumes:
+  app-data:
+  hf-models:
+  qdrant-data:

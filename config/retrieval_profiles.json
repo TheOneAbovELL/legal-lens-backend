@@ -1,0 +1,97 @@
+{
+  "_comment": "Retrieval profiles and selection rules. Values are starting points, not measured optima: run scripts/evaluate_chunking.py and set ADAPTIVE_SELECTION_MODE=data_driven to let measured results choose chunk profiles.",
+  "profiles": {
+    "FAST": {
+      "top_k": 6,
+      "candidate_k": 20,
+      "sources": [
+        "dense",
+        "sparse",
+        "metadata"
+      ],
+      "source_weights": {
+        "dense": 1.0,
+        "sparse": 1.0,
+        "metadata": 1.5
+      },
+      "reranker": "lexical",
+      "query_expansion": false,
+      "decomposition": false,
+      "max_context_tokens": 1800,
+      "max_chunks": 6,
+      "max_chunks_per_document": 4,
+      "max_evidence_per_subquery": 4
+    },
+    "BALANCED": {
+      "top_k": 10,
+      "candidate_k": 30,
+      "sources": [
+        "dense",
+        "sparse",
+        "metadata",
+        "graph"
+      ],
+      "source_weights": {
+        "dense": 1.0,
+        "sparse": 0.9,
+        "metadata": 1.5,
+        "graph": 0.8
+      },
+      "reranker": "lexical",
+      "query_expansion": true,
+      "decomposition": false,
+      "max_context_tokens": 3000,
+      "max_chunks": 10,
+      "max_chunks_per_document": 6,
+      "max_evidence_per_subquery": 4
+    },
+    "DEEP": {
+      "top_k": 16,
+      "candidate_k": 40,
+      "sources": [
+        "dense",
+        "sparse",
+        "metadata",
+        "graph"
+      ],
+      "source_weights": {
+        "dense": 1.0,
+        "sparse": 0.9,
+        "metadata": 1.5,
+        "graph": 0.8
+      },
+      "reranker": "lexical",
+      "query_expansion": true,
+      "decomposition": true,
+      "max_context_tokens": 4500,
+      "max_chunks": 14,
+      "max_chunks_per_document": 6,
+      "max_evidence_per_subquery": 3
+    }
+  },
+  "complexity_to_profile": {
+    "SIMPLE": "FAST",
+    "MODERATE": "BALANCED",
+    "COMPLEX": "DEEP"
+  },
+  "intent_minimum_profile": {
+    "provision_mapping": "BALANCED",
+    "case_law": "BALANCED",
+    "document_analysis": "DEEP"
+  },
+  "chunk_profiles_by_document_type": {
+    "statute": [
+      "hierarchical-400"
+    ],
+    "constitution": [
+      "hierarchical-400"
+    ],
+    "case_law": [
+      "hierarchical-400"
+    ],
+    "other": [
+      "hierarchical-400"
+    ]
+  },
+  "_reranker_decision": "2026-10-02: BALANCED/DEEP use the lexical reranker. Measured with scripts/evaluate_rag.py (18 labelled fixture queries, bge-m3): lexical recall@5 1.000 / nDCG@5 0.946 / p50 233 ms vs cross-encoder (ms-marco-MiniLM-L-6-v2) 0.982 / 0.912 / 858 ms. Re-evaluate with --reranker cross_encoder before switching back or trying a legal/multilingual reranker."
+}
