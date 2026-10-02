@@ -20,7 +20,7 @@ groq==1.0.0
 sentence-transformers==5.2.0
 transformers==4.57.3
 tokenizers==0.22.1
-torch==2.2.2+cpu
+torch==2.12.1+cpu
 
 # -------- Numerical / ML Stack (Python 3.10 SAFE) --------
 numpy==1.26.4
