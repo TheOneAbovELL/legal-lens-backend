@@ -71,14 +71,14 @@ describe("chat workspace", () => {
     await waitFor(() => expect(assistant).toHaveAttribute("data-status", "complete"));
     expect(assistant).toHaveTextContent("Cheating is punishable with imprisonment");
     expect(screen.getAllByTestId("assistant-message")).toHaveLength(1); // complete did not duplicate
-    expect(within(assistant).getByText("SIMPLE")).toBeInTheDocument();
+    expect(within(assistant).getByText(/Based on 1 retrieved legal source/)).toBeInTheDocument();
     expect(within(assistant).getByTestId("mapping-card")).toHaveTextContent("IPC 420");
     await waitFor(() => expect(window.location.pathname).toBe("/app/chat/conv-1"));
 
     // Evidence panel shows the cited source; clicking the chip selects it.
     const panel = screen.getByRole("complementary", { name: /sources and evidence/i });
     expect(within(panel).getAllByTestId("source-card")).toHaveLength(1);
-    await user.click(within(assistant).getByRole("button", { name: /citation C1/i }));
+    await user.click(within(assistant).getAllByRole("button", { name: /citation C1/i })[0]!);
     expect(within(panel).getByTestId("source-card")).toHaveAttribute("aria-current", "true");
     expect(within(panel).getByTestId("source-card")).toHaveTextContent("Whoever cheats");
 
@@ -99,7 +99,7 @@ describe("chat workspace", () => {
     const assistant = await screen.findByTestId("assistant-message");
     await waitFor(() => expect(assistant).toHaveAttribute("data-status", "failed"));
     expect(within(assistant).getByRole("alert")).toHaveTextContent("language model provider failed");
-    expect(within(assistant).getByRole("button", { name: /retry/i })).toBeInTheDocument();
+    expect(within(assistant).getByRole("button", { name: /try again/i })).toBeInTheDocument();
   });
 
   it("shows the insufficient-evidence state instead of inventing sources", async () => {
@@ -116,7 +116,7 @@ describe("chat workspace", () => {
     await user.keyboard("{Enter}");
     const assistant = await screen.findByTestId("assistant-message");
     await waitFor(() => expect(assistant).toHaveAttribute("data-status", "insufficient_evidence"));
-    expect(within(assistant).getByText(/insufficient evidence/i)).toBeInTheDocument();
+    expect(within(assistant).getByText(/not enough evidence/i)).toBeInTheDocument();
     expect(screen.queryAllByTestId("source-card")).toHaveLength(0);
   });
 
@@ -127,8 +127,8 @@ describe("chat workspace", () => {
       throw new TypeError("Failed to fetch");
     }));
     mount();
-    expect(await screen.findByText(/backend is currently unavailable/i, {}, { timeout: 4000 })).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: /retry/i })).toBeInTheDocument();
+    expect(await screen.findByText(/connection interrupted/i, {}, { timeout: 4000 })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /retry now/i })).toBeInTheDocument();
     expect(screen.queryByText(/Failed to fetch/)).not.toBeInTheDocument();
   });
 });

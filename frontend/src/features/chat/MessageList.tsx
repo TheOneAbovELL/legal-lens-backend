@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { AssistantMessage } from "./AssistantMessage";
-import { StatusRow } from "./StatusRow";
+import { ResearchProgress } from "./ResearchProgress";
 import { UserMessage } from "./UserMessage";
 import type { ChatState } from "./chatReducer";
 
@@ -10,7 +10,7 @@ interface Props {
   onStop: () => void;
 }
 
-/** Renders the conversation; keeps the view pinned to the bottom only while the user is already there. */
+/** Renders the research thread; stays pinned to the bottom only while the reader is already there. */
 export function MessageList({ state, onRetry, onStop }: Props) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const pinned = useRef(true);
@@ -18,12 +18,12 @@ export function MessageList({ state, onRetry, onStop }: Props) {
   const onScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
-    pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 80;
+    pinned.current = el.scrollHeight - el.scrollTop - el.clientHeight < 96;
   };
   useLayoutEffect(() => {
     const el = scrollRef.current;
     if (el && pinned.current) el.scrollTop = el.scrollHeight;
-  }, [state.messages]);
+  }, [state.messages, state.phase]);
   useEffect(() => {
     pinned.current = true;
     const el = scrollRef.current;
@@ -31,8 +31,8 @@ export function MessageList({ state, onRetry, onStop }: Props) {
   }, [state.conversationId]);
 
   return (
-    <div ref={scrollRef} className="chat__scroll" onScroll={onScroll} data-testid="message-list">
-      <div className="chat__column">
+    <div ref={scrollRef} className="thread" onScroll={onScroll} data-testid="message-list">
+      <div className="thread__col">
         {state.messages.map((m, i) =>
           m.role === "user" ? (
             <UserMessage key={m.id} message={m} />
@@ -43,7 +43,7 @@ export function MessageList({ state, onRetry, onStop }: Props) {
               onStop={state.streamingId === m.id ? onStop : undefined} />
           ),
         )}
-        {state.streamingId && state.phase !== "streaming" ? <StatusRow phase={state.phase} stage={state.stage} /> : null}
+        {state.streamingId && state.phase !== "streaming" ? <ResearchProgress phase={state.phase} stage={state.stage} /> : null}
       </div>
     </div>
   );

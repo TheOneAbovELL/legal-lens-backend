@@ -38,11 +38,11 @@ describe("authentication", () => {
     });
     vi.stubGlobal("fetch", fetchMock);
     mountAt("/app/search");
-    expect(await screen.findByText(/Sign in to keep/)).toBeInTheDocument();
+    expect(await screen.findByText(/Continue your research/)).toBeInTheDocument();
     const user = userEvent.setup();
     await user.type(screen.getByLabelText(/username or email/i), "alice");
     await user.type(screen.getByLabelText(/^password$/i), "Secret-pass-1");
-    await user.click(screen.getByRole("button", { name: /sign in/i }));
+    await user.click(screen.getByRole("button", { name: /continue/i }));
     await waitFor(() => expect(window.location.pathname).toBe("/app/search"));
     expect(tokenStore.get()).toBe("tok");
     const loginCall = fetchMock.mock.calls.find(([u]) => (u as string).endsWith("/auth/login"));
@@ -58,7 +58,7 @@ describe("authentication", () => {
     const user = userEvent.setup();
     await user.type(screen.getByLabelText(/username or email/i), "alice");
     await user.type(screen.getByLabelText(/^password$/i), "wrong-pass-1");
-    await user.click(screen.getByRole("button", { name: /sign in/i }));
+    await user.click(screen.getByRole("button", { name: /continue/i }));
     expect(await screen.findByRole("alert")).toHaveTextContent("Invalid username or password.");
   });
 
@@ -85,7 +85,7 @@ describe("authentication", () => {
     }));
     mountAt("/app");
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: /account menu/i }));
+    await user.click((await screen.findAllByRole("button", { name: /account menu/i }))[0]!);
     await user.click(screen.getByRole("menuitem", { name: /sign out/i }));
     await waitFor(() => expect(window.location.pathname).toBe("/login"));
     expect(tokenStore.get()).toBeNull();

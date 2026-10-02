@@ -33,6 +33,13 @@ export interface ChatMessage {
   query: string | null;
 }
 
+/** One research aspect (backend sub-query) and whether its retrieval has completed. */
+export interface Aspect {
+  id: string;
+  label: string;
+  done: boolean;
+}
+
 export interface StageInfo {
   complexity?: string;
   profile?: string;
@@ -40,6 +47,7 @@ export interface StageInfo {
   candidates?: number;
   evidence?: number;
   subqueries?: number;
+  aspects?: Aspect[];
 }
 
 export interface ChatState {
@@ -96,6 +104,13 @@ function patch(state: ChatState, id: string, update: Partial<ChatMessage>): Chat
   return { ...state, messages: state.messages.map((m) => (m.id === id ? { ...m, ...update } : m)) };
 }
 
+/** Short, safe label for a sub-query: its purpose when the planner gave one, else the query text. */
+function aspectLabel(sq: { query: string; purpose: string }): string {
+  const purpose = sq.purpose?.trim();
+  if (purpose && purpose.length <= 60 && !/^(lookup|retrieve|search)$/i.test(purpose)) return purpose;
+  return sq.query.length > 70 ? `${sq.query.slice(0, 67)}…` : sq.query;
+}
+
 export function chatReducer(state: ChatState, action: ChatAction): ChatState {
   switch (action.type) {
     case "reset":
@@ -103,7 +118,6 @@ export function chatReducer(state: ChatState, action: ChatAction): ChatState {
     case "load":
       return { ...initialChatState(action.conversationId), persisted: true, messages: action.messages.map(fromServerMessage) };
     case "send": {
-      // A send while streaming is ignored by the hook; here we simply append.
       const user = blank(action.userId, "user", action.query, action.now, null);
       const assistant = blank(action.assistantId, "assistant", "", action.now, action.query);
       return { ...state, messages: [...state.messages, user, assistant], phase: "analyzing", streamingId: action.assistantId, stage: {} };
@@ -136,8 +150,7 @@ function applyEvent(state: ChatState, event: StreamEvent, id: string): ChatState
       const userIdx = [...next.messages].reverse().findIndex((m) => m.role === "user");
       if (event.user_message_id && userIdx >= 0) {
         const realIdx = next.messages.length - 1 - userIdx;
-        const user = next.messages[realIdx];
-        if (user) next.messages = next.messages.map((m, i) => (i === realIdx ? { ...m, serverId: event.user_message_id, requestId: event.request_id } : m));
+        next.messages = next.messages.map((m, i) => (i === realIdx ? { ...m, serverId: event.user_message_id, requestId: event.request_id } : m));
       }
       return patch(next, id, { requestId: event.request_id });
     }
@@ -151,16 +164,20 @@ function applyEvent(state: ChatState, event: StreamEvent, id: string): ChatState
       void _type;
       return patch({ ...state, phase: "retrieving" }, id, { analysis });
     }
-    case "plan":
-      return { ...state, phase: "retrieving", stage: { ...state.stage, subqueries: event.subqueries.length } };
+    case "plan": {
+      const aspects = event.subqueries.length > 1 ? event.subqueries.map((s) => ({ id: s.id, label: aspectLabel(s), done: false })) : undefined;
+      return { ...state, phase: "retrieving", stage: { ...state.stage, subqueries: event.subqueries.length, aspects } };
+    }
     case "retrieval":
-      return { ...state, phase: "reviewing", stage: { ...state.stage, candidates: event.candidates } };
+      return {
+        ...state, phase: "reviewing",
+        stage: { ...state.stage, candidates: event.candidates, aspects: state.stage.aspects?.map((a) => ({ ...a, done: true })) },
+      };
     case "reranking":
       return { ...state, phase: "reviewing" };
     case "evidence":
       return { ...state, phase: "generating", stage: { ...state.stage, evidence: event.count } };
     case "bns_alert":
-      return state; // mappings arrive again, typed, in the complete event
     case "status":
       return state;
     case "token": {
@@ -192,14 +209,14 @@ function applyEvent(state: ChatState, event: StreamEvent, id: string): ChatState
           serverId: result.message_id ?? null,
           content: result.answer ?? "",
           status: result.status,
-          citations: result.citations,
-          bnsAlerts: result.bns_alerts,
-          analysis: result.analysis,
-          warnings: result.warnings,
-          disclaimer: result.disclaimer,
+          citations: result.citations ?? [],
+          bnsAlerts: result.bns_alerts ?? [],
+          analysis: result.analysis ?? null,
+          warnings: result.warnings ?? [],
+          disclaimer: result.disclaimer ?? null,
           requestId: result.request_id,
           diagnostics: result.diagnostics ?? null,
-          metadata: result.metadata,
+          metadata: result.metadata ?? null,
           error: null,
         }),
         conversationId: result.conversation_id ?? state.conversationId,
@@ -213,7 +230,7 @@ function applyEvent(state: ChatState, event: StreamEvent, id: string): ChatState
       return {
         ...patch(state, id, {
           status: "failed",
-          error: { title: "Request failed", message: event.message, retryable: true, code: event.code },
+          error: { title: "Legal Lens couldn't complete this research request.", message: event.message, retryable: true, code: event.code },
           content: current?.content ?? "",
         }),
         phase: "idle", streamingId: null,
@@ -227,16 +244,21 @@ function applyEvent(state: ChatState, event: StreamEvent, id: string): ChatState
 export function phaseLabel(phase: Phase, stage: StageInfo): string | null {
   switch (phase) {
     case "analyzing":
-      return "Analyzing question…";
+      return "Analyzing question";
     case "retrieving":
-      return stage.subqueries && stage.subqueries > 1 ? `Finding legal evidence (${stage.subqueries} sub-queries)…` : "Finding legal evidence…";
+      return stage.subqueries && stage.subqueries > 1 ? `Researching ${stage.subqueries} legal aspects` : "Searching legal sources";
     case "reviewing":
-      return stage.candidates !== undefined ? `Reviewing ${stage.candidates} candidate passages…` : "Reviewing sources…";
+      return stage.candidates !== undefined ? `Reviewing ${stage.candidates} passages` : "Reviewing evidence";
     case "generating":
-      return stage.evidence !== undefined ? `Generating answer from ${stage.evidence} sources…` : "Generating answer…";
-    case "streaming":
-      return null;
+      return stage.evidence !== undefined ? `Preparing answer from ${stage.evidence} sources` : "Preparing answer";
     default:
       return null;
   }
 }
+
+export const PHASES: { key: Phase; label: string }[] = [
+  { key: "analyzing", label: "Analyze" },
+  { key: "retrieving", label: "Search" },
+  { key: "reviewing", label: "Review" },
+  { key: "generating", label: "Answer" },
+];

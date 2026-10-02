@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
-import { Button } from "@/components/ui/Button";
+import { ArrowUp, Square } from "lucide-react";
+import { IconButton } from "@/components/ui/Button";
+import { getDefaultProfile } from "@/lib/preferences";
 import type { RetrievalProfile } from "@/types/api";
 
 interface Props {
@@ -8,13 +10,14 @@ interface Props {
   onStop: () => void;
   initialText?: string;
   autoFocus?: boolean;
+  placeholder?: string;
 }
 
 const MAX = 4000;
 
-export function ChatComposer({ busy, onSend, onStop, initialText = "", autoFocus }: Props) {
+export function ChatComposer({ busy, onSend, onStop, initialText = "", autoFocus, placeholder }: Props) {
   const [text, setText] = useState(initialText);
-  const [profile, setProfile] = useState<RetrievalProfile | "">("");
+  const [profile, setProfile] = useState<RetrievalProfile | "">(() => getDefaultProfile() ?? "");
   const ref = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -24,7 +27,7 @@ export function ChatComposer({ busy, onSend, onStop, initialText = "", autoFocus
     const el = ref.current;
     if (!el) return;
     el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 200)}px`;
+    el.style.height = `${Math.min(el.scrollHeight, 220)}px`;
   }, [text]);
   useEffect(() => {
     if (autoFocus) ref.current?.focus();
@@ -48,25 +51,28 @@ export function ChatComposer({ busy, onSend, onStop, initialText = "", autoFocus
     <form className="composer" onSubmit={submit} aria-label="Ask a legal question">
       <div className="composer__inner">
         <div className="composer__box">
-          <label htmlFor="composer-input" className="visually-hidden">Ask a legal question</label>
+          <label htmlFor="composer-input" className="sr-only">Ask a legal question</label>
           <textarea id="composer-input" ref={ref} className="composer__input" rows={1} value={text} maxLength={MAX + 200}
-            placeholder="Ask a legal question about Indian law…" onChange={(e) => setText(e.target.value)} onKeyDown={onKey}
+            placeholder={placeholder ?? "Ask a legal question…"} onChange={(e) => setText(e.target.value)} onKeyDown={onKey}
             disabled={busy} data-testid="composer-input" />
           {busy ? (
-            <Button variant="danger" size="sm" onClick={onStop} aria-label="Stop generating">Stop</Button>
+            <IconButton label="Stop generating" variant="secondary" onClick={onStop}><Square /></IconButton>
           ) : (
-            <Button type="submit" variant="primary" size="sm" disabled={!valid} aria-label="Send question" data-testid="send-button">Send</Button>
+            <IconButton label="Send question" variant="primary" type="submit" disabled={!valid} data-testid="send-button"><ArrowUp /></IconButton>
           )}
         </div>
-        <div className="composer__hint">
-          <span>Enter to send · Shift+Enter for a new line{text.length > MAX ? ` · too long (${text.length}/${MAX})` : ""}</span>
+        <div className="composer__meta">
+          <span>
+            <span className="kbd">Enter</span> to send · <span className="kbd">Shift</span>+<span className="kbd">Enter</span> for a new line
+            {text.length > MAX ? ` · too long (${text.length}/${MAX})` : ""}
+          </span>
           <label>
-            <span className="visually-hidden">Retrieval profile</span>
-            <select value={profile} onChange={(e) => setProfile(e.target.value as RetrievalProfile | "")} className="input" style={{ padding: "2px 6px", fontSize: 12, width: "auto" }} aria-label="Retrieval profile">
-              <option value="">Adaptive routing</option>
-              <option value="FAST">FAST</option>
-              <option value="BALANCED">BALANCED</option>
-              <option value="DEEP">DEEP</option>
+            <span className="sr-only">Retrieval depth</span>
+            <select className="select" value={profile} onChange={(e) => setProfile(e.target.value as RetrievalProfile | "")} aria-label="Retrieval depth">
+              <option value="">Adaptive depth</option>
+              <option value="FAST">Fast</option>
+              <option value="BALANCED">Balanced</option>
+              <option value="DEEP">Deep</option>
             </select>
           </label>
         </div>

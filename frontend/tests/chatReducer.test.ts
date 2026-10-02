@@ -36,11 +36,11 @@ describe("chatReducer", () => {
     expect(s.messages[0]?.serverId).toBe("um-1");
     feed({ type: "complexity", complexity: "SIMPLE", confidence: 0.9, reasons: [], profile: "FAST", route: "simple" });
     feed({ type: "plan", method: null, subqueries: [{ id: "q0", query: "x", purpose: "p" }] });
-    expect(phaseLabel(s.phase, s.stage)).toBe("Finding legal evidence…");
+    expect(phaseLabel(s.phase, s.stage)).toBe("Searching legal sources");
     feed({ type: "retrieval", candidates: 12, sources: { dense: 8, sparse: 7 } });
-    expect(phaseLabel(s.phase, s.stage)).toBe("Reviewing 12 candidate passages…");
+    expect(phaseLabel(s.phase, s.stage)).toBe("Reviewing 12 passages");
     feed({ type: "evidence", count: 3, context_tokens: 500, citations: [citation] });
-    expect(phaseLabel(s.phase, s.stage)).toBe("Generating answer from 3 sources…");
+    expect(phaseLabel(s.phase, s.stage)).toBe("Preparing answer from 3 sources");
     feed({ type: "token", content: "Cheating " });
     feed({ type: "token", content: "is punished [C1]." });
     expect(s.messages[1]?.content).toBe("Cheating is punished [C1].");

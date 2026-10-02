@@ -19,8 +19,11 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
+  // Visual snapshots are rendered with local fonts/platform; they are generated and checked on the
+  // developer machine (`--update-snapshots` to refresh) and skipped on CI runners.
+  snapshotPathTemplate: "{testDir}/__snapshots__/{testFileName}/{arg}{ext}",
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"] }, testIgnore: /mobile\.spec\.ts/ },
+    { name: "desktop", use: { ...devices["Desktop Chrome"] }, testIgnore: process.env.CI ? [/mobile\.spec\.ts/, /visual\.spec\.ts/] : /mobile\.spec\.ts/ },
     { name: "mobile", use: { ...devices["Pixel 7"] }, testMatch: /mobile\.spec\.ts/ },
   ],
   webServer: [

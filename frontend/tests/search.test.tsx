@@ -48,10 +48,11 @@ describe("search explorer", () => {
     await user.click(screen.getByTestId("search-button"));
     const results = await screen.findByTestId("search-results");
     expect(within(results).getAllByTestId("search-result")).toHaveLength(1);
-    expect(screen.getByTestId("search-meta")).toHaveTextContent("dense: 5");
-    expect(screen.getByTestId("search-meta")).toHaveTextContent("SIMPLE");
+    expect(screen.getByTestId("search-meta")).toHaveTextContent("hybrid retrieval");
+    expect(screen.getByTestId("search-meta")).toHaveTextContent("simple query");
+    expect(screen.getByTestId("search-meta")).not.toHaveTextContent("0.8"); // raw scores are never shown
     expect(calls[0]).toMatchObject({ query: "Section 420 IPC", top_k: 10, filters: null });
-    await user.click(within(results).getByRole("heading", { name: /IPC 420/ }));
+    await user.click(within(results).getByRole("heading", { name: /IPC §420/ }));
     expect(screen.getAllByTestId("source-card")).toHaveLength(1);
     expect(screen.getByTestId("source-card")).toHaveTextContent("420. Cheating and dishonestly inducing");
     await user.click(within(results).getByRole("link", { name: /open source/i }));
