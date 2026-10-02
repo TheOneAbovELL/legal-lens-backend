@@ -1,0 +1,176 @@
+/* ============================================================================
+   Legal Lens design tokens
+   Light = paper/ink editorial workspace. Dark = designed separately (never inverted).
+   Only `--accent` carries colour; evidence has its own warm, restrained tint.
+   ============================================================================ */
+:root {
+  color-scheme: light;
+
+  /* surfaces */
+  --bg: #f4f2ed;              /* workspace background: warm paper */
+  --surface: #fbfaf7;         /* reading surface */
+  --surface-2: #f0ede6;       /* sidebar / secondary */
+  --surface-3: #e9e5dc;       /* hover, pressed, inset */
+  --overlay: rgba(23, 24, 28, 0.42);
+
+  /* ink */
+  --ink: #1a1c21;
+  --ink-2: #41464f;           /* secondary text */
+  --ink-3: #6b717c;           /* metadata */
+  --ink-4: #9a9fa8;           /* placeholder, disabled */
+
+  /* lines */
+  --line: #e2ded5;
+  --line-2: #cfcabf;          /* stronger: inputs, focus ring base */
+
+  /* accent (one colour): links, active nav, citations, primary actions */
+  --accent: #2c5a8c;
+  --accent-ink: #ffffff;
+  --accent-hover: #244b75;
+  --accent-soft: #e6edf5;
+  --accent-line: #b9cce2;
+
+  /* evidence (warm, document-like) */
+  --evidence-bg: #f6f1e4;
+  --evidence-line: #e4d9bf;
+  --evidence-ink: #5a4a17;
+  --evidence-mark: #f1e3b2;
+
+  /* semantic (used sparingly: status words, inline notices) */
+  --ok: #2b6e4a;
+  --ok-soft: #e4f0e8;
+  --warn: #8a5b00;
+  --warn-soft: #f7ecd2;
+  --danger: #a33a31;
+  --danger-soft: #f6e3e0;
+
+  --focus: #2c5a8c;
+  --shadow-1: 0 1px 2px rgba(26, 28, 33, 0.06), 0 0 0 1px rgba(26, 28, 33, 0.04);
+  --shadow-2: 0 8px 24px rgba(26, 28, 33, 0.12), 0 0 0 1px rgba(26, 28, 33, 0.05);
+  --shadow-sheet: 0 -8px 32px rgba(26, 28, 33, 0.18);
+
+  /* typography */
+  --font-ui: "Inter", "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-editorial: "Source Serif 4", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --text-xs: 12px;
+  --text-sm: 13px;
+  --text-md: 14.5px;
+  --text-lg: 16.5px;   /* answer body */
+  --text-xl: 20px;
+  --text-2xl: 26px;
+  --text-3xl: 32px;
+  --leading-tight: 1.25;
+  --leading-body: 1.6;
+  --leading-reading: 1.7;
+
+  /* spacing (4px base) */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 20px;
+  --s-6: 24px;
+  --s-8: 32px;
+  --s-10: 40px;
+  --s-12: 48px;
+  --s-16: 64px;
+
+  /* radii: restrained */
+  --r-sm: 4px;
+  --r-md: 8px;
+  --r-lg: 12px;
+  --r-pill: 999px;
+
+  /* layout */
+  --reading: 760px;
+  --reading-wide: 840px;
+  --sidebar-w: 268px;
+  --sidebar-w-collapsed: 0px;
+  --evidence-w: 392px;
+  --topbar-h: 52px;
+
+  /* motion */
+  --ease: cubic-bezier(0.2, 0.7, 0.2, 1);
+  --t-fast: 120ms;
+  --t-base: 200ms;
+  --t-slow: 320ms;
+}
+
+/* ---------------------------------------------------------------- dark */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: #16181c;
+  --surface: #1c1f24;
+  --surface-2: #141619;
+  --surface-3: #262a31;
+  --overlay: rgba(0, 0, 0, 0.55);
+
+  --ink: #e9e7e2;
+  --ink-2: #b9bcc3;
+  --ink-3: #868b95;
+  --ink-4: #5d626b;
+
+  --line: #2b2f37;
+  --line-2: #3a3f49;
+
+  --accent: #8fb4de;
+  --accent-ink: #11161c;
+  --accent-hover: #a9c6e8;
+  --accent-soft: #1f2a37;
+  --accent-line: #35506c;
+
+  --evidence-bg: #22201a;
+  --evidence-line: #3b3627;
+  --evidence-ink: #d9c88f;
+  --evidence-mark: #4a3f1c;
+
+  --ok: #6fc394;
+  --ok-soft: #1b2e23;
+  --warn: #e0b35a;
+  --warn-soft: #332a14;
+  --danger: #ef8f86;
+  --danger-soft: #3a1f1d;
+
+  --focus: #8fb4de;
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --shadow-2: 0 10px 28px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-sheet: 0 -8px 32px rgba(0, 0, 0, 0.6);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    color-scheme: dark;
+    --bg: #16181c;
+    --surface: #1c1f24;
+    --surface-2: #141619;
+    --surface-3: #262a31;
+    --overlay: rgba(0, 0, 0, 0.55);
+    --ink: #e9e7e2;
+    --ink-2: #b9bcc3;
+    --ink-3: #868b95;
+    --ink-4: #5d626b;
+    --line: #2b2f37;
+    --line-2: #3a3f49;
+    --accent: #8fb4de;
+    --accent-ink: #11161c;
+    --accent-hover: #a9c6e8;
+    --accent-soft: #1f2a37;
+    --accent-line: #35506c;
+    --evidence-bg: #22201a;
+    --evidence-line: #3b3627;
+    --evidence-ink: #d9c88f;
+    --evidence-mark: #4a3f1c;
+    --ok: #6fc394;
+    --ok-soft: #1b2e23;
+    --warn: #e0b35a;
+    --warn-soft: #332a14;
+    --danger: #ef8f86;
+    --danger-soft: #3a1f1d;
+    --focus: #8fb4de;
+    --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.04);
+    --shadow-2: 0 10px 28px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    --shadow-sheet: 0 -8px 32px rgba(0, 0, 0, 0.6);
+  }
+}

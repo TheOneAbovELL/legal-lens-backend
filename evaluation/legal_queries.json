@@ -1,0 +1,27 @@
+{
+  "name": "legal-lens-fixture-v1",
+  "description": "Small labelled query set over evaluation/corpus (paraphrased statute excerpts). It exercises the evaluation framework and gives directional signal only; build a larger set over the real corpus before drawing production conclusions.",
+  "corpus": "evaluation/corpus",
+  "examples": [
+    {"id": "s01", "query": "What is the punishment for cheating under Section 420 IPC?", "expected_sections": ["fixture-ipc:420"], "query_type": "statute_lookup", "complexity": "SIMPLE", "evidence_requirements": "statutory text"},
+    {"id": "s02", "query": "Define theft", "expected_sections": ["fixture-ipc:378", "fixture-bns:303"], "query_type": "definition", "complexity": "SIMPLE"},
+    {"id": "s03", "query": "What does Article 21 of the Constitution protect?", "expected_sections": ["fixture-constitution:21"], "query_type": "statute_lookup", "complexity": "SIMPLE"},
+    {"id": "s04", "query": "punishment for murder", "expected_sections": ["fixture-ipc:302", "fixture-bns:103"], "query_type": "statute_lookup", "complexity": "SIMPLE"},
+    {"id": "s05", "query": "What is culpable homicide?", "expected_sections": ["fixture-ipc:299", "fixture-bns:100"], "query_type": "definition", "complexity": "SIMPLE"},
+    {"id": "s06", "query": "How is an FIR recorded for a cognizable offence?", "expected_sections": ["fixture-crpc:154"], "query_type": "procedural", "complexity": "SIMPLE"},
+    {"id": "s07", "query": "equality before law", "expected_sections": ["fixture-constitution:14"], "query_type": "statute_lookup", "complexity": "SIMPLE"},
+    {"id": "s08", "query": "Can a person seek anticipatory bail before arrest?", "expected_sections": ["fixture-crpc:438"], "query_type": "procedural", "complexity": "SIMPLE"},
+
+    {"id": "m01", "query": "What is the BNS equivalent of Section 420 IPC?", "expected_sections": ["fixture-ipc:420", "fixture-bns:318"], "query_type": "provision_mapping", "complexity": "MODERATE"},
+    {"id": "m02", "query": "Explain the exceptions under which culpable homicide is not murder", "expected_sections": ["fixture-ipc:300"], "query_type": "statute_lookup", "complexity": "MODERATE"},
+    {"id": "m03", "query": "Is dishonest concealment of facts a deception for the offence of cheating?", "expected_sections": ["fixture-ipc:415"], "query_type": "statute_lookup", "complexity": "MODERATE"},
+    {"id": "m04", "query": "What reasonable restrictions can the State impose on freedom of speech under Article 19?", "expected_sections": ["fixture-constitution:19"], "query_type": "statute_lookup", "complexity": "MODERATE"},
+    {"id": "m05", "query": "What can a person do if the police refuse to record information about a cognizable offence?", "expected_sections": ["fixture-crpc:154"], "query_type": "procedural", "complexity": "MODERATE"},
+    {"id": "m06", "query": "Which BNS section replaced IPC 302 and what punishment does it prescribe?", "expected_sections": ["fixture-bns:103", "fixture-ipc:302"], "query_type": "provision_mapping", "complexity": "MODERATE"},
+
+    {"id": "c01", "query": "Compare the definitions of culpable homicide and murder under the IPC and explain why the distinction matters for punishment", "expected_sections": ["fixture-ipc:299", "fixture-ipc:300", "fixture-ipc:302"], "query_type": "comparison", "complexity": "COMPLEX"},
+    {"id": "c02", "query": "Compare IPC 420 and BNS 318 and explain how the change affects a person accused of cheating before and after July 2024", "expected_sections": ["fixture-ipc:420", "fixture-bns:318"], "query_type": "comparison", "complexity": "COMPLEX"},
+    {"id": "c03", "query": "How do Articles 14, 19 and 21 together protect personal liberty and what restrictions apply?", "expected_sections": ["fixture-constitution:14", "fixture-constitution:19", "fixture-constitution:21"], "query_type": "analysis", "complexity": "COMPLEX"},
+    {"id": "c04", "query": "Compare the punishment for theft and the punishment for murder under the old and new criminal codes", "expected_sections": ["fixture-ipc:379", "fixture-bns:303", "fixture-ipc:302", "fixture-bns:103"], "query_type": "comparison", "complexity": "COMPLEX"}
+  ]
+}

@@ -1,0 +1,37 @@
+# Local stack: backend API + frontend (nginx) [+ optional Qdrant server].
+#   docker compose up --build            -> http://localhost:8080 (frontend), http://localhost:8000 (API)
+#   docker compose --profile qdrant up   -> also starts a Qdrant server (set QDRANT_URL=http://qdrant:6333 in .env)
+# Secrets come from .env (never baked into images). Qdrant Cloud is used simply by setting QDRANT_URL/QDRANT_API_KEY.
+services:
+  api:
+    build: .
+    env_file: .env
+    environment:
+      QDRANT_PATH: /app/data/qdrant
+      DATABASE_URL: sqlite+aiosqlite:////app/data/legal_lens.db
+      CORS_ORIGINS: http://localhost:8080,http://127.0.0.1:8080,http://localhost:5173,http://127.0.0.1:5173
+    ports:
+      - "8000:8000"
+    volumes:
+      - app-data:/app/data
+      - hf-models:/models/hf
+    restart: unless-stopped
+  web:
+    build: ./frontend
+    depends_on:
+      - api
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+  qdrant:
+    image: qdrant/qdrant:v1.15.4
+    profiles: ["qdrant"]
+    ports:
+      - "6333:6333"
+    volumes:
+      - qdrant-data:/qdrant/storage
+
+volumes:
+  app-data:
+  hf-models:
+  qdrant-data:

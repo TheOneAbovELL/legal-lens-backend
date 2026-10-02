@@ -1,0 +1,21 @@
+.git
+.env
+.env.*
+venv
+.venv
+**/__pycache__
+**/*.pyc
+.pytest_cache
+.ruff_cache
+.idea
+.vscode
+data/qdrant
+data/*.db
+evaluation/results
+tests
+docs
+*.md
+desktop.ini
+test_qdrant.py
+test_rag.py
+notepad test_qdrant.py

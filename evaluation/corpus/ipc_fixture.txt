@@ -1,0 +1,26 @@
+Indian Penal Code, 1860 (evaluation fixture: paraphrased excerpts, not the authoritative text)
+
+CHAPTER XVI OF OFFENCES AFFECTING THE HUMAN BODY
+
+299. Culpable homicide.—Whoever causes death by doing an act with the intention of causing death, or with the intention of causing such bodily injury as is likely to cause death, or with the knowledge that he is likely by such act to cause death, commits the offence of culpable homicide.
+Explanation 1.—A person who causes bodily injury to another who is labouring under a disorder, disease or bodily infirmity, and thereby accelerates the death of that other, shall be deemed to have caused his death.
+Explanation 2.—Where death is caused by bodily injury, the person who causes such bodily injury shall be deemed to have caused the death, although by resorting to proper remedies and skilful treatment the death might have been prevented.
+
+300. Murder.—Except in the cases hereinafter excepted, culpable homicide is murder if the act by which the death is caused is done with the intention of causing death, or if it is done with the intention of causing such bodily injury as the offender knows to be likely to cause the death of the person to whom the harm is caused.
+Exception 1.—Culpable homicide is not murder if the offender, whilst deprived of the power of self-control by grave and sudden provocation, causes the death of the person who gave the provocation.
+Exception 2.—Culpable homicide is not murder if the offender, in the exercise in good faith of the right of private defence of person or property, exceeds the power given to him by law.
+
+302. Punishment for murder.—Whoever commits murder shall be punished with death, or imprisonment for life, and shall also be liable to fine.
+
+CHAPTER XVII OF OFFENCES AGAINST PROPERTY
+
+378. Theft.—Whoever, intending to take dishonestly any movable property out of the possession of any person without that person's consent, moves that property in order to such taking, is said to commit theft.
+Illustrations
+(a) A cuts down a tree on Z's ground, with the intention of dishonestly taking the tree out of Z's possession without Z's consent. Here, as soon as A has severed the tree in order to such taking, he has committed theft.
+
+379. Punishment for theft.—Whoever commits theft shall be punished with imprisonment of either description for a term which may extend to three years, or with fine, or with both.
+
+415. Cheating.—Whoever, by deceiving any person, fraudulently or dishonestly induces the person so deceived to deliver any property to any person, or to consent that any person shall retain any property, is said to cheat.
+Explanation.—A dishonest concealment of facts is a deception within the meaning of this section.
+
+420. Cheating and dishonestly inducing delivery of property.—Whoever cheats and thereby dishonestly induces the person deceived to deliver any property to any person, or to make, alter or destroy the whole or any part of a valuable security, shall be punished with imprisonment of either description for a term which may extend to seven years, and shall also be liable to fine.

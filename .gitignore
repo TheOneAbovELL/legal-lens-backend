@@ -1,11 +1,28 @@
-venv/
+# secrets / local config
 .env
+.env.*
+!.env.example
+
+# python
+venv/
+.venv/
 __pycache__/
 *.pyc
+.pytest_cache/
+.ruff_cache/
+
+# local data (generated)
+data/qdrant/
+data/*.db
+evaluation/results/*
+!evaluation/results/.gitkeep
+
+# IDE / OS
+.idea/
+.vscode/
 desktop.ini
+
+# local scratch scripts
 test_qdrant.py
 test_rag.py
 notepad test_qdrant.py
-.idea/
-
-
