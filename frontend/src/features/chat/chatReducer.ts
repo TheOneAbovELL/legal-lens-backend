@@ -202,8 +202,11 @@ function applyEvent(state: ChatState, event: StreamEvent, id: string): ChatState
       return event.valid ? state : patch(state, id, { warnings: event.warnings });
     case "complete": {
       // Reconcile: the complete payload is canonical (answer text, citations, ids). Never duplicate.
+      // Pipeline warnings are operational detail (planner fallbacks, optional sources); only answer
+      // validation warnings (from the `validation` event) are user-facing and are kept.
       const { type: _type, ...result } = event;
       void _type;
+      const current = state.messages.find((m) => m.id === id);
       return {
         ...patch(state, id, {
           serverId: result.message_id ?? null,
@@ -212,7 +215,7 @@ function applyEvent(state: ChatState, event: StreamEvent, id: string): ChatState
           citations: result.citations ?? [],
           bnsAlerts: result.bns_alerts ?? [],
           analysis: result.analysis ?? null,
-          warnings: result.warnings ?? [],
+          warnings: current?.warnings ?? [],
           disclaimer: result.disclaimer ?? null,
           requestId: result.request_id,
           diagnostics: result.diagnostics ?? null,

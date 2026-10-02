@@ -1000,6 +1000,10 @@ a:hover {
   overflow-anchor: none;
   scroll-padding-bottom: 120px;
 }
+.thread--intro {
+  display: flex;
+  flex-direction: column;
+}
 .thread__col {
   width: min(var(--reading), 100%);
   margin: 0 auto;

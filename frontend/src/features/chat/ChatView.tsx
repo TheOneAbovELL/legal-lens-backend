@@ -20,7 +20,7 @@ const PROMPTS: { text: string; tag: string }[] = [
 
 function Intro({ onPick }: { onPick: (text: string) => void }) {
   return (
-    <div className="thread">
+    <div className="thread thread--intro">
       <section className="intro" aria-labelledby="intro-title">
         <div className="intro__head">
           <span className="intro__kicker">Legal Lens</span>

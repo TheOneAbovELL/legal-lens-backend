@@ -42,7 +42,7 @@ test("TEST 1 — login → workspace → new research → question → streamed 
   await expect(assistant).toContainText("Based on the indexed sources");
   await expect(assistant.getByText(/Based on \d+ retrieved legal source/)).toBeVisible();
   await expect(page).toHaveURL(/\/app\/chat\//);
-  await expect(page.getByRole("navigation", { name: "Conversations" }).getByRole("link")).toHaveCount(1);
+  await expect(page.getByRole("navigation", { name: "Conversations" }).getByRole("list").getByRole("link")).toHaveCount(1);
 
   // Inline citation chip → the evidence pane selects the passage; the conversation stays in place.
   const chatUrl = page.url();
@@ -75,7 +75,7 @@ test("TEST 1 — login → workspace → new research → question → streamed 
   await page.getByLabel(/^Password$/).fill(password);
   await page.getByRole("button", { name: "Continue" }).click();
   await expect(page).toHaveURL(/\/app$/);
-  await expect(page.getByRole("navigation", { name: "Conversations" }).getByRole("link")).toHaveCount(1);
+  await expect(page.getByRole("navigation", { name: "Conversations" }).getByRole("list").getByRole("link")).toHaveCount(1);
 });
 
 test("TEST 2 — conversation → reload → conversation restored with citations", async ({ page }) => {
@@ -90,13 +90,13 @@ test("TEST 2 — conversation → reload → conversation restored with citation
   // Switching to another conversation and back keeps history intact (no duplicated messages).
   await page.getByRole("button", { name: "New research" }).click();
   await expect(page.getByRole("heading", { name: /Research law with evidence/ })).toBeVisible();
-  await page.getByRole("navigation", { name: "Conversations" }).getByRole("link").first().click();
+  await page.getByRole("navigation", { name: "Conversations" }).getByRole("list").getByRole("link").first().click();
   await expect(page.getByTestId("assistant-message")).toHaveCount(1);
 });
 
 test("TEST 3 — search → result → evidence → use in research", async ({ page }) => {
   await signup(page, `e2e_search_${Date.now().toString(36)}`);
-  await page.getByRole("link", { name: "Search" }).click();
+  await page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Search", exact: true }).click();
   await page.getByTestId("search-input").fill("Section 420 IPC");
   await page.getByTestId("search-button").click();
   const results = page.getByTestId("search-results");
@@ -141,7 +141,7 @@ test("TEST 4 — complex query → backend-driven research status → final answ
 
 test("diagnostics stays a developer surface with truthful status words", async ({ page }) => {
   await signup(page, `e2e_diag_${Date.now().toString(36)}`);
-  await page.getByRole("link", { name: "Diagnostics" }).click();
+  await page.getByRole("navigation", { name: "Primary" }).getByRole("link", { name: "Diagnostics" }).click();
   await expect(page.getByText(/developer diagnostics/)).toBeVisible();
   await expect(page.getByRole("region", { name: "backend" }).getByText("healthy", { exact: true })).toBeVisible();
   await expect(page.getByRole("region", { name: "backend" })).toContainText("qdrant");
