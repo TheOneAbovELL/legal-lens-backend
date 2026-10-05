@@ -26,3 +26,7 @@ desktop.ini
 test_qdrant.py
 test_rag.py
 notepad test_qdrant.py
+
+# start.sh runtime files
+.run/
+logs/

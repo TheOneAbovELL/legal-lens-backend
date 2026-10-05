@@ -8,6 +8,31 @@ frontend dev server proxies API calls to the backend, so nothing needs editing t
 Python 3.12, Node 20+ (22 recommended), git. Optional: Docker, a Groq API key (answers), a Qdrant
 Cloud cluster (otherwise the embedded local index under `data/qdrant` is used).
 
+## One command: `start.sh`
+
+```bash
+./start.sh            # prepare + start backend and frontend; Ctrl+C stops both
+./start.sh stop       # stop them from another terminal
+./start.sh status     # what is running, and the /ready verdict
+```
+
+It checks Python 3.11+ / Node 20+ / curl, creates `venv` and installs requirements when missing,
+installs `frontend/node_modules` when missing or outdated, creates `.env` from `.env.example` if
+absent, builds the local index from `data/legal_docs` on first run (embedded mode only), starts
+uvicorn (`--reload`) and Vite, waits for `/health` and the frontend, waits for `/ready` while the
+embedding model loads, then opens http://localhost:5173. Logs go to `logs/backend.log` and
+`logs/frontend.log`. Servers that are already running are reused, never killed.
+
+Windows: run it from **Git Bash**. In PowerShell, plain `bash` is usually WSL, which cannot use the
+Windows virtualenv, so call Git's bash: `& "C:\Program Files\Git\bin\bash.exe" start.sh`.
+
+Options: `BACKEND_PORT`, `FRONTEND_PORT`, `LL_NO_BROWSER=1`, `LL_NO_RELOAD=1`, `LL_SKIP_INSTALL=1`,
+`LL_KEEP_SHELL_ENV=1` (by default a stray `QDRANT_URL`/`QDRANT_API_KEY` in your shell is ignored so
+`.env` decides), `LL_INGEST_FIXTURES=1` (also index the demo statutes on first run),
+`LL_READY_TIMEOUT` (seconds). Example: `BACKEND_PORT=8001 LL_NO_BROWSER=1 ./start.sh`.
+
+The manual steps below do the same thing by hand.
+
 ## Backend
 
 Windows (PowerShell):

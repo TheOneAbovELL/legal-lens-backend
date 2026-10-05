@@ -47,7 +47,18 @@ tests/          backend test suite (offline by default)
 
 ## Quick start
 
-Backend (Windows PowerShell; see `docs/LOCAL_DEVELOPMENT.md` for Ubuntu/macOS):
+One command boots everything (installs what is missing, starts backend + frontend, waits until
+healthy, opens the browser; Ctrl+C stops both). Run it from Git Bash on Windows, or any shell on
+Linux/macOS:
+
+```bash
+./start.sh            # start          ./start.sh stop    ./start.sh status    ./start.sh help
+```
+
+From PowerShell, call Git's bash explicitly (plain `bash` there is usually WSL):
+`& "C:\Program Files\Git\bin\bash.exe" start.sh`
+
+Manual start, step by step — backend (Windows PowerShell; see `docs/LOCAL_DEVELOPMENT.md` for Ubuntu/macOS):
 
 ```powershell
 python -m venv venv; .\venv\Scripts\Activate.ps1
