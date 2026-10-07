@@ -52,6 +52,31 @@ AWS (per the 2026-01-09 meeting): the image runs unchanged on ECS/Fargate or App
 Cloud, RDS PostgreSQL and Groq; use Secrets Manager for `JWT_SECRET_KEY`, `LLM_API_KEY`,
 `QDRANT_API_KEY` and `NEO4J_PASSWORD`.
 
+## Using the shared data-layer stores
+
+The data-layer workstream loads Supreme Court judgments into its own Qdrant Cloud collection
+(`judgment_chunks`: one **unnamed** 1024-d cosine vector, no sparse vectors, ~45 payload fields)
+and a Neo4j Aura graph (`Case`/`Statute`/`Judge` nodes; `CITES`, `INTERPRETS`, `REPLACED_BY`,
+`HEARD_BY`, `AUTHORED_BY`, `OVERRULES`). The backend reads both without any code change:
+
+1. Set the `QDRANT_*` values exactly as shown in `.env.example` (empty vector names switch the
+   store into external-schema mode: the data-layer payload is mapped onto the backend's chunk
+   metadata, including `cite_as`, `opinion_type` and `opinion_author`, and internal-only filters
+   such as `chunk_profile`/`is_latest` are not sent).
+2. Run `python scripts/prepare_external_collection.py` once per collection. Qdrant Cloud rejects
+   filters on unindexed payload keys; the script creates the missing keyword/bool indexes
+   (additive, touches no data).
+3. Set `NEO4J_URI`, `NEO4J_USER` (alias `NEO4J_USERNAME`), `NEO4J_PASSWORD` and `NEO4J_DATABASE`
+   from the Aura console. Named provisions then retrieve statute nodes enriched with the cases
+   that interpret them, and provision mappings are cross-checked against `REPLACED_BY` edges.
+4. Never ingest into the shared collection: `scripts/ingest.py` refuses external-schema targets,
+   and `QDRANT_CREATE_COLLECTION=false` keeps the backend from creating or altering collections
+   it does not own.
+
+Aura free instances pause when idle and can refuse routing intermittently after resume; the
+circuit breaker turns that into one warning per cooldown window while retrieval continues
+without the graph.
+
 ## Migrating from the previous backend
 
 * New collection `legal-lens-chunks` (named dense + sparse vectors, full metadata). The previous

@@ -6,6 +6,7 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
+from app.core.logging import get_logger
 from app.core.text import count_tokens, sha256
 from app.domain.acts import act_display_name
 from app.domain.chunks import CHUNK_NAMESPACE, ChunkMetadata
@@ -17,6 +18,8 @@ from app.providers.vector_store.qdrant_store import QdrantVectorStore
 from app.rag.query.entities import provision_refs
 from app.rag.retrieval.base import RetrievalQuery, Retriever, to_retrieved
 from app.rag.sparse import SparseEncoder
+
+logger = get_logger(__name__)
 
 
 class DenseRetriever(Retriever):
@@ -84,11 +87,26 @@ class GraphRetriever(Retriever):
         if not refs:
             return []
         rows = await self._client.statutes(refs, limit=top_k)
+        cases_by_ref: dict[tuple[str, str], list[dict]] = {}
+        try:
+            for row in await self._client.interpreting_cases(refs):
+                cases_by_ref[(str(row.get("code") or "").upper(), str(row.get("section") or ""))] = row.get("cases") or []
+        except Exception as exc:  # noqa: BLE001 - enrichment only; statutes alone are still useful
+            logger.debug("interpreting-cases lookup skipped", extra={"error_type": type(exc).__name__})
         results = []
         for rank, row in enumerate(rows, start=1):
             code, section = str(row.get("code") or "").upper(), str(row.get("section") or "")
             title = row.get("title") or ""
             content = row.get("text") or f"{act_display_name(code)} Section {section}: {title}".strip()
+            cases = [c for c in cases_by_ref.get((code, section), []) if c.get("name")]
+            if cases:
+                lines = []
+                for c in cases:
+                    cite = f" , {c['citation']}" if c.get("citation") else ""
+                    when = f" ({str(c['date'])[:4]})" if c.get("date") else ""
+                    flag = " [overruled]" if c.get("overruled") else ""
+                    lines.append(f"- {c['name']}{cite.replace(' ,', ',')}{when}{flag}")
+                content += "\nCases interpreting this provision (from the knowledge graph):\n" + "\n".join(lines)
             chunk_id = str(uuid.uuid5(CHUNK_NAMESPACE, f"neo4j|{code}|{section}"))
             meta = ChunkMetadata(
                 chunk_id=chunk_id,

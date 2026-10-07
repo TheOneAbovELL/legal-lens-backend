@@ -35,6 +35,17 @@ RETURN new.code AS code, toString(new.section) AS section, new.title AS title,
        toString(r.effective_date) AS effective_date, r.modification_type AS modification_type
 """
 
+_INTERPRETING_CASES_QUERY = """
+UNWIND $refs AS ref
+MATCH (c:Case)-[:INTERPRETS]->(s:Statute)
+WHERE toUpper(s.code) = ref.code
+  AND (toString(s.section) = ref.section OR toString(s.base_section) = ref.section)
+WITH ref, s, c ORDER BY c.date DESC
+WITH ref, s, collect({name: c.name, citation: c.citation, court: c.court,
+                      date: toString(c.date), overruled: EXISTS { (c)<-[:OVERRULES]-() }})[0..$per_statute] AS cases
+RETURN s.code AS code, toString(s.section) AS section, s.title AS title, cases
+"""
+
 _REPLACED_FROM_QUERY = """
 MATCH (old:Statute)-[r:REPLACED_BY]->(new:Statute)
 WHERE toUpper(new.code) = $code AND toString(new.section) = $section
@@ -47,12 +58,16 @@ class Neo4jClient:
     """Optional dependency: a hard per-call timeout plus a circuit breaker, so an unreachable
     graph costs one timeout per cooldown window instead of one per query."""
 
-    def __init__(self, uri: str, user: str, password: str, *, timeout: float = 5.0, cooldown: float = 60.0) -> None:
+    def __init__(
+        self, uri: str, user: str, password: str, *,
+        timeout: float = 5.0, cooldown: float = 60.0, database: str | None = None,
+    ) -> None:
         self._driver: AsyncDriver = AsyncGraphDatabase.driver(
             uri, auth=(user, password), connection_timeout=timeout, max_transaction_retry_time=timeout
         )
         self._timeout = timeout
         self._cooldown = cooldown
+        self._database = database
         self._open_until = 0.0
 
     @property
@@ -64,7 +79,8 @@ class Neo4jClient:
             raise RetrievalError("neo4j circuit open (recent failure); skipping")
         try:
             records, _, _ = await asyncio.wait_for(
-                self._driver.execute_query(cypher, parameters_=params, routing_="r"), timeout=self._timeout
+                self._driver.execute_query(cypher, parameters_=params, routing_="r", database_=self._database),
+                timeout=self._timeout,
             )
         except (Neo4jError, ServiceUnavailable, OSError, TimeoutError) as exc:
             self._open_until = time.monotonic() + self._cooldown
@@ -79,6 +95,13 @@ class Neo4jClient:
             return []
         payload = [{"code": code.upper(), "section": section} for code, section in refs]
         return await self._run(_STATUTES_QUERY, refs=payload, limit=limit)
+
+    async def interpreting_cases(self, refs: list[tuple[str, str]], per_statute: int = 5) -> list[dict[str, Any]]:
+        """Cases that INTERPRET the named provisions, newest first, with an overruled flag."""
+        if not refs:
+            return []
+        payload = [{"code": code.upper(), "section": section} for code, section in refs]
+        return await self._run(_INTERPRETING_CASES_QUERY, refs=payload, per_statute=per_statute)
 
     async def replacements(self, code: str, section: str) -> list[dict[str, Any]]:
         return await self._run(_REPLACEMENTS_QUERY, code=code.upper(), section=section)

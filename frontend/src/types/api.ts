@@ -83,7 +83,14 @@ export interface Citation {
   paragraph?: number | null;
   page?: number | null;
   case_name?: string | null;
+  /** Reporter citation, e.g. "(2019) 3 SCC 39" (judgments). */
+  case_citation?: string | null;
   court?: string | null;
+  /** majority | concurring | dissenting | ... — a concurrence or dissent is not the holding. */
+  opinion_type?: string | null;
+  opinion_author?: string | null;
+  /** Formal pin citation supplied by the data layer. */
+  cite_as?: string | null;
   source: string;
   chunk_id?: string | null;
   retrieval_sources: string[];

@@ -197,6 +197,13 @@ def render_context(context: BuiltContext) -> str:
         for item in group.items:
             md = item.chunk.metadata
             where = [f"source: {md.source}"]
+            if md.cite_as:
+                where.append(f"cite as: {md.cite_as}")
+            elif md.case_citation:
+                where.append(md.case_citation)
+            if md.opinion_type and md.opinion_type not in ("majority", "unanimous"):
+                author = f" of {md.opinion_author}" if md.opinion_author else ""
+                where.append(f"{md.opinion_type} opinion{author}, not the court's holding")
             if md.page_number:
                 where.append(f"page {md.page_number}")
             if md.subsection:

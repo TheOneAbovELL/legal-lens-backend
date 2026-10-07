@@ -134,8 +134,9 @@ class Settings(BaseSettings):
     # ---- knowledge graph (optional) ----
     neo4j_enabled: bool | None = None  # None -> enabled iff NEO4J_URI is set
     neo4j_uri: str | None = None
-    neo4j_user: str | None = None
+    neo4j_user: str | None = Field(default=None, validation_alias=AliasChoices("NEO4J_USER", "NEO4J_USERNAME"))
     neo4j_password: SecretStr | None = None
+    neo4j_database: str | None = None  # None -> the server's default database
     neo4j_timeout: float = Field(default=5.0, gt=0)
     neo4j_circuit_cooldown_seconds: float = Field(default=60.0, ge=0)
 

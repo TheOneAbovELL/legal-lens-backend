@@ -366,6 +366,17 @@
             "title": "Chunking Strategy",
             "type": "string"
           },
+          "cite_as": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cite As"
+          },
           "content_hash": {
             "title": "Content Hash",
             "type": "string"
@@ -456,6 +467,28 @@
           "jurisdiction": {
             "title": "Jurisdiction",
             "type": "string"
+          },
+          "opinion_author": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opinion Author"
+          },
+          "opinion_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opinion Type"
           },
           "overlap": {
             "title": "Overlap",
@@ -598,6 +631,18 @@
             ],
             "title": "Act"
           },
+          "case_citation": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Reporter citation, e.g. (2019) 3 SCC 39",
+            "title": "Case Citation"
+          },
           "case_name": {
             "anyOf": [
               {
@@ -623,6 +668,18 @@
           "citation_id": {
             "title": "Citation Id",
             "type": "string"
+          },
+          "cite_as": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Formal pin citation supplied by the data layer",
+            "title": "Cite As"
           },
           "court": {
             "anyOf": [
@@ -655,6 +712,29 @@
             "description": "Leading text of the cited passage (bounded)",
             "title": "Excerpt",
             "type": "string"
+          },
+          "opinion_author": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Opinion Author"
+          },
+          "opinion_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "majority | concurring | dissenting | ... (judgments)",
+            "title": "Opinion Type"
           },
           "page": {
             "anyOf": [

@@ -84,6 +84,7 @@ def build_neo4j(settings: Settings) -> Neo4jClient | None:
         settings.neo4j_uri, settings.neo4j_user, settings.neo4j_password.get_secret_value(),
         timeout=settings.neo4j_timeout,
         cooldown=settings.neo4j_circuit_cooldown_seconds,
+        database=settings.neo4j_database,
     )
 
 

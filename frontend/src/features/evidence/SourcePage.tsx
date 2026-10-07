@@ -54,6 +54,10 @@ export function SourcePage() {
               {citation.subsection ? <span><b>Sub-provision</b> {citation.subsection}</span> : null}
               {citation.page ? <span><b>Page</b> {citation.page}</span> : null}
               {citation.court ? <span><b>Court</b> {citation.court}</span> : null}
+              {citation.cite_as ? <span><b>Cite as</b> {citation.cite_as}</span> : null}
+              {citation.opinion_type ? (
+                <span><b>Opinion</b> {citation.opinion_type}{citation.opinion_author ? ` · ${citation.opinion_author}` : ""}</span>
+              ) : null}
               <span><b>Source</b> {citation.source}{citation.document_version ? ` · version ${citation.document_version.replace(/^v-?/, "")}` : ""}</span>
             </div>
             <div className="doc__text" data-testid="source-text">
