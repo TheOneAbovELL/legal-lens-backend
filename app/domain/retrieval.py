@@ -7,7 +7,14 @@ from enum import Enum
 
 from pydantic import BaseModel, Field
 
+from app.domain.acts import act_display_name
 from app.domain.chunks import ChunkMetadata
+
+
+def _act_label(code: str) -> str:
+    """"IPC (Indian Penal Code, 1860)" - the code plus its spelled-out name, once."""
+    name = act_display_name(code)
+    return f"{code} ({name})" if name and name.upper() != code.upper() else code
 
 
 class RetrievalFilters(BaseModel):
@@ -72,7 +79,11 @@ class Citation(BaseModel):
     paragraph: int | None = None
     page: int | None = None
     case_name: str | None = None
+    case_citation: str | None = Field(default=None, description="Reporter citation, e.g. (2019) 3 SCC 39")
     court: str | None = None
+    opinion_type: str | None = Field(default=None, description="majority | concurring | dissenting | ... (judgments)")
+    opinion_author: str | None = None
+    cite_as: str | None = Field(default=None, description="Formal pin citation supplied by the data layer")
     source: str
     chunk_id: str | None = None
     retrieval_sources: list[str] = Field(default_factory=list)
@@ -110,7 +121,11 @@ class EvidenceItem(BaseModel):
             paragraph=md.paragraph,
             page=md.page_number,
             case_name=md.case_name,
+            case_citation=md.case_citation,
             court=md.court,
+            opinion_type=md.opinion_type,
+            opinion_author=md.opinion_author,
+            cite_as=md.cite_as,
             source=md.source,
             chunk_id=md.chunk_id,
             retrieval_sources=self.chunk.sources,
@@ -165,12 +180,13 @@ class ProvisionMapping(BaseModel):
     effective_date: date | None = None
 
     def describe(self) -> str:
-        src = f"{self.source_act} Section {self.source_section}"
+        # Spell the act names out so the model never invents an expansion for an acronym.
+        src = f"{_act_label(self.source_act)} Section {self.source_section}"
         if self.mapping_type == MappingType.UNKNOWN:
             return f"{src}: no entry in the mapping dataset (mapping unknown)."
         if self.mapping_type == MappingType.NO_MAPPING:
-            return f"{src}: no corresponding provision in {self.target_act}. {self.notes or ''}".strip()
-        targets = ", ".join(f"{self.target_act} Section {t}" for t in self.target_sections)
+            return f"{src}: no corresponding provision in {_act_label(self.target_act)}. {self.notes or ''}".strip()
+        targets = ", ".join(f"{_act_label(self.target_act)} Section {t}" for t in self.target_sections)
         subject = f" ({self.subject})" if self.subject else ""
         notes = f" Note: {self.notes}" if self.notes else ""
         when = f" Effective {self.effective_date.isoformat()}." if self.effective_date else ""

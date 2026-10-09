@@ -75,6 +75,14 @@ async def main() -> int:
     )
     reports = []
     print(f"vector store: {store.describe()}")
+    if store.mode == "remote" and not store.dense_name and not args.dry_run:
+        # An empty dense vector name means an externally managed collection (the data-layer
+        # cluster). This backend reads it; it must never write someone else's collection.
+        print("\nERROR: refusing to ingest into the externally managed collection "
+              f"{store.collection!r} (QDRANT_DENSE_VECTOR_NAME is empty).\n"
+              "Point QDRANT_COLLECTION at a collection this backend owns, or use the local index\n"
+              "by clearing QDRANT_URL for this shell.")
+        return 2
     try:
         needs_index = not args.dry_run
         if needs_index:

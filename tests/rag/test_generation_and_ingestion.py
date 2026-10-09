@@ -123,7 +123,26 @@ def test_fullwidth_citations_are_normalised_and_uncited_answers_invalid() -> Non
     fake = validate_output("Something 【C9】.", ctx, [], [])
     assert not fake.valid and fake.invalid_citation_ids == ["C9"]
     uncited = validate_output("Seven years.", ctx, [], [])
-    assert not uncited.valid and "no citations" in " ".join(uncited.warnings)
+    assert not uncited.valid and "no evidence passages" in " ".join(uncited.warnings)
+
+
+def test_mapping_ids_alone_do_not_satisfy_the_citation_requirement() -> None:
+    """[M#] notes only say two provisions correspond; factual claims still need [C#] evidence."""
+    from app.domain.retrieval import MappingType, ProvisionMapping
+
+    mapping = ProvisionMapping(
+        source_act="IPC", source_section="497", target_act="BNS", target_sections=[],
+        mapping_type=MappingType.NO_MAPPING, citation_id="M1",
+        provenance="test", verification_status="curated_unverified",
+    )
+    result = validate_output("It was struck down and not carried over [M1].", _context(), [mapping], [])
+    assert not result.valid
+    assert "no evidence passages" in " ".join(result.warnings)
+    # With no evidence passages at all, a mapping-only answer stays valid.
+    from app.domain.retrieval import BuiltContext
+
+    empty = validate_output("No corresponding provision exists [M1].", BuiltContext(), [mapping], [])
+    assert empty.valid
 
 
 def test_spaced_citations_are_normalised() -> None:

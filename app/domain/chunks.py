@@ -38,6 +38,12 @@ class ChunkMetadata(BaseModel):
     case_citation: str | None = None
     court: str | None = None
     decision_date: date | None = None
+    #: Which opinion of the judgment this passage belongs to (majority/concurring/dissenting/...).
+    #: A concurrence or dissent must never be presented as the court's holding.
+    opinion_type: str | None = None
+    opinion_author: str | None = None
+    #: Ready-made formal citation string supplied by the data layer (e.g. "X v. Y, (2019) 3 SCC 39, para 7").
+    cite_as: str | None = None
     parent_chunk_id: str | None = None
     hierarchy_level: int = 1  # 0 = parent/unit level, 1 = leaf
     block_types: list[str] = Field(default_factory=list)

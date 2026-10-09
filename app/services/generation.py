@@ -161,12 +161,15 @@ def validate_output(
         warnings.append(f"answer cited unknown evidence IDs: {', '.join(invalid)}")
     if unsupported:
         warnings.append(f"answer mentions provisions/cases not found in the evidence: {', '.join(unsupported)}")
-    if context.items and not ids:
-        warnings.append("answer contains no citations")
+    # Mapping notes [M#] only say that two provisions correspond; they cannot support factual
+    # claims. When evidence passages exist, the answer must cite at least one [C#] of them.
+    evidence_ids = [c for c in ids if c.startswith("C")]
+    if context.items and not evidence_ids:
+        warnings.append("answer cites no evidence passages")
     unknown_maps = [m for m in mappings if m.mapping_type == MappingType.UNKNOWN]
     if unknown_maps:
         warnings.append("some provision mappings are unknown to the mapping dataset")
-    uncited = bool(context.items) and not ids
+    uncited = bool(context.items) and not evidence_ids
     return OutputValidation(
         valid=not invalid and not unsupported and not uncited,
         cited_ids=[c for c in ids if c in allowed],

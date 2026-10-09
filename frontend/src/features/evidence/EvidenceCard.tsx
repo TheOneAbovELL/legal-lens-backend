@@ -47,7 +47,8 @@ export function EvidenceCard({ citation, selected, question, onSelect, compact }
   const copy = async (e: React.MouseEvent) => {
     e.stopPropagation();
     try {
-      await navigator.clipboard.writeText(`${citation.citation_id} ${label} — ${citation.title} (${citation.source})\n${citation.excerpt}`);
+      const formal = citation.cite_as ?? `${label} — ${citation.title} (${citation.source})`;
+      await navigator.clipboard.writeText(`${citation.citation_id} ${formal}\n${citation.excerpt}`);
       notify({ tone: "success", title: "Citation copied" });
     } catch {
       notify({ tone: "danger", title: "Copy failed", message: "Clipboard access was denied." });
@@ -63,11 +64,19 @@ export function EvidenceCard({ citation, selected, question, onSelect, compact }
       </div>
       <p className="evc__doc">
         {citation.title}
+        {citation.case_citation ? ` · ${citation.case_citation}` : ""}
         {citation.section_heading ? ` · ${citation.section_heading}` : ""}
         {citation.subsection ? ` · sub-provision ${citation.subsection}` : ""}
+        {citation.paragraph ? ` · para ${citation.paragraph}` : ""}
         {citation.page ? ` · p. ${citation.page}` : ""}
         {citation.court ? ` · ${citation.court}` : ""}
       </p>
+      {citation.opinion_type && !["majority", "unanimous"].includes(citation.opinion_type) ? (
+        <p className="evc__why" data-testid="opinion-note">
+          {citation.opinion_type.charAt(0).toUpperCase() + citation.opinion_type.slice(1)} opinion
+          {citation.opinion_author ? ` of ${citation.opinion_author}` : ""} — not the Court's holding.
+        </p>
+      ) : null}
       {why ? <p className="evc__why">{why}</p> : null}
       {citation.excerpt ? (
         <p className={`evc__text${open ? " evc__text--open" : ""}`}><Highlighted text={citation.excerpt} terms={terms} /></p>

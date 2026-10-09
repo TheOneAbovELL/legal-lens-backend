@@ -29,7 +29,14 @@ from app.rag.query.expansion import QueryExpander
 from app.rag.query.intent import IntentDetector
 from app.rag.reranking import CrossEncoderReranker, LexicalReranker, NoopReranker, Reranker, RerankerSet
 from app.rag.retrieval.hybrid import HybridRetriever
-from app.rag.retrieval.retrievers import DenseRetriever, GraphRetriever, MetadataRetriever, Retriever, SparseRetriever
+from app.rag.retrieval.retrievers import (
+    DenseRetriever,
+    GraphRetriever,
+    MetadataRetriever,
+    Retriever,
+    SparseRetriever,
+    TextMatchRetriever,
+)
 from app.rag.sparse import SparseEncoder
 from app.schemas.system import ComponentStatus, ReadinessResponse
 from app.services.auth import AuthService
@@ -84,6 +91,7 @@ def build_neo4j(settings: Settings) -> Neo4jClient | None:
         settings.neo4j_uri, settings.neo4j_user, settings.neo4j_password.get_secret_value(),
         timeout=settings.neo4j_timeout,
         cooldown=settings.neo4j_circuit_cooldown_seconds,
+        database=settings.neo4j_database,
     )
 
 
@@ -121,6 +129,9 @@ class Container:
         retrievers: list[Retriever] = [
             DenseRetriever(self.embedder, self.store),
             SparseRetriever(self.sparse, self.store),
+            # Keyword leg for collections without sparse vectors; inert when the collection has
+            # no full-text index, so both store layouts keep a lexical source.
+            TextMatchRetriever(self.store),
             MetadataRetriever(self.store),
         ]
         if self.neo4j is not None:
@@ -201,8 +212,11 @@ class Container:
         try:
             await self.store.ensure_collection(st.embedding_dimension)
             await self.refresh_index_state()
+            keyword = (f"full-text index on {self.store.text_search_field!r}"
+                       if self.store.text_search_field else "unavailable")
             log(f"Qdrant ready: {await self.store.count(None)} points; sparse retrieval "
-                f"{'enabled' if self.store.sparse_enabled else 'disabled'}; indexed chunk profiles: "
+                f"{'enabled' if self.store.sparse_enabled else 'disabled'}; keyword retrieval: {keyword}; "
+                f"indexed chunk profiles: "
                 f"{sorted(self.selector.indexed_chunk_profiles or []) or 'none (run scripts/ingest.py)'}.")
         except AppError as exc:
             # Keep serving /health; /ready reports the dependency failure.
@@ -239,6 +253,9 @@ class Container:
         sources = set(self.retriever.sources)
         if not self.store.sparse_enabled:
             sources.discard("sparse")
+        if not self.store.text_search_field:
+            # No full-text payload index: the keyword leg cannot run, so never advertise it.
+            sources.discard("lexical")
         self.selector.available_sources = sources
         profiles = await self.store.available_profiles()
         self.selector.indexed_chunk_profiles = set(profiles) if profiles else None
@@ -271,7 +288,8 @@ class Container:
             if not info["exists"]:
                 raise _NotReady("failed", "collection missing (run scripts/ingest.py)")
             return {"mode": info["mode"], "collection": info["collection"], "points": await self.store.count(None),
-                    "sparse_enabled": self.store.sparse_enabled}
+                    "sparse_enabled": self.store.sparse_enabled,
+                    "text_search_field": self.store.text_search_field}
 
         async def embedding() -> dict[str, Any]:
             if "embeddings" in self.startup_errors:

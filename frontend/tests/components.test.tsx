@@ -11,6 +11,7 @@ import { chatReducer, initialChatState } from "@/features/chat/chatReducer";
 import { groupConversations } from "@/features/conversations/Sidebar";
 import { EvidenceProvider, useEvidence } from "@/features/evidence/EvidenceContext";
 import { EvidenceList, EvidenceTools } from "@/features/evidence/EvidencePanel";
+import { EvidenceCard } from "@/features/evidence/EvidenceCard";
 import { MappingComparison } from "@/features/mapping/MappingComparison";
 import type { Citation } from "@/types/api";
 
@@ -70,6 +71,27 @@ describe("evidence panel", () => {
     expect(cards[2]).toHaveAttribute("aria-current", "true");
     expect(within(cards[0]!).getByText(/Exact match for a provision named/)).toBeInTheDocument();
     expect(within(cards[0]!).getByText("cheats", { selector: "mark" })).toBeInTheDocument();
+  });
+
+  it("labels a concurring or dissenting opinion and never a majority one", () => {
+    const concurring: Citation = {
+      citation_id: "C9", document_id: "joseph_shine_2018", chunk_id: "p7", title: "Joseph Shine v. Union of India",
+      case_name: "Joseph Shine v. Union of India", case_citation: "(2019) 3 SCC 39", court: "Supreme Court",
+      opinion_type: "concurring", opinion_author: "D.Y. Chandrachud",
+      cite_as: "Joseph Shine v. Union of India, (2019) 3 SCC 39, para 7 (per D.Y. Chandrachud, concurring)",
+      paragraph: 7, source: "qdrant", retrieval_sources: ["dense"], excerpt: "Sexual agency of women.",
+    };
+    const majority: Citation = { ...concurring, citation_id: "C10", opinion_type: "majority", opinion_author: "Dipak Misra" };
+    render(
+      <MemoryRouter><ToastProvider>
+        <EvidenceCard citation={concurring} /><EvidenceCard citation={majority} />
+      </ToastProvider></MemoryRouter>,
+    );
+    const notes = screen.getAllByTestId("opinion-note");
+    expect(notes).toHaveLength(1);
+    expect(notes[0]).toHaveTextContent("Concurring opinion of D.Y. Chandrachud — not the Court's holding.");
+    expect(screen.getAllByText(/\(2019\) 3 SCC 39/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/para 7/).length).toBeGreaterThan(0);
   });
 });
 

@@ -7,12 +7,14 @@
       "sources": [
         "dense",
         "sparse",
+        "lexical",
         "metadata"
       ],
       "source_weights": {
         "dense": 1.0,
         "sparse": 1.0,
-        "metadata": 1.5
+        "metadata": 1.5,
+        "lexical": 1.0
       },
       "reranker": "lexical",
       "query_expansion": false,
@@ -28,6 +30,7 @@
       "sources": [
         "dense",
         "sparse",
+        "lexical",
         "metadata",
         "graph"
       ],
@@ -35,7 +38,8 @@
         "dense": 1.0,
         "sparse": 0.9,
         "metadata": 1.5,
-        "graph": 0.8
+        "graph": 0.8,
+        "lexical": 0.9
       },
       "reranker": "lexical",
       "query_expansion": true,
@@ -51,6 +55,7 @@
       "sources": [
         "dense",
         "sparse",
+        "lexical",
         "metadata",
         "graph"
       ],
@@ -58,7 +63,8 @@
         "dense": 1.0,
         "sparse": 0.9,
         "metadata": 1.5,
-        "graph": 0.8
+        "graph": 0.8,
+        "lexical": 0.9
       },
       "reranker": "lexical",
       "query_expansion": true,
@@ -93,5 +99,6 @@
       "hierarchical-400"
     ]
   },
-  "_reranker_decision": "2026-10-02: BALANCED/DEEP use the lexical reranker. Measured with scripts/evaluate_rag.py (18 labelled fixture queries, bge-m3): lexical recall@5 1.000 / nDCG@5 0.946 / p50 233 ms vs cross-encoder (ms-marco-MiniLM-L-6-v2) 0.982 / 0.912 / 858 ms. Re-evaluate with --reranker cross_encoder before switching back or trying a legal/multilingual reranker."
+  "_reranker_decision": "2026-10-02: BALANCED/DEEP use the lexical reranker. Measured with scripts/evaluate_rag.py (18 labelled fixture queries, bge-m3): lexical recall@5 1.000 / nDCG@5 0.946 / p50 233 ms vs cross-encoder (ms-marco-MiniLM-L-6-v2) 0.982 / 0.912 / 858 ms. Re-evaluate with --reranker cross_encoder before switching back or trying a legal/multilingual reranker.",
+  "_lexical_note": "'lexical' is the full-text keyword leg used when a collection carries no sparse vectors (e.g. the data-layer judgment collection). It is skipped automatically when the collection has no full-text payload index."
 }

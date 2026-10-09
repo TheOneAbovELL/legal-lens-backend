@@ -54,38 +54,49 @@ def payload_to_chunk(point_id: str, payload: dict[str, Any]) -> Chunk:
     if "chunk_profile" in payload:
         meta = ChunkMetadata.model_validate({k: v for k, v in payload.items() if k in ChunkMetadata.model_fields})
         return Chunk(content=content, context_header=payload.get("context_header", ""), metadata=meta)
-    # Legacy schema (e.g. judgment_chunks: case_id, case_name, paragraph_num, court, date, text).
+    # External data-layer schema (judgment_chunks: case_id, case_name, paragraph_num, court,
+    # date, text, context, opinion_*, cite_as, parent_id, tokens, page_start, doc_sha256, ...).
     document_id = str(payload.get("case_id") or payload.get("statute_id") or payload.get("source") or "external")
     title = str(payload.get("case_name") or payload.get("title") or document_id)
     paragraph = payload.get("paragraph_num")
     decision_date = payload.get("date")
+    tokens = payload.get("tokens")
+    page = payload.get("page_start")
+    is_judgment = bool(payload.get("case_id")) or payload.get("doc_type") == "judgment"
     meta = ChunkMetadata(
-        chunk_id=str(point_id),
+        chunk_id=str(payload.get("chunk_id") or point_id),
         document_id=document_id,
-        document_version=str(payload.get("version", "external")),
+        document_version=str(payload.get("doc_sha256") or payload.get("version") or "external")[:16],
         source=str(payload.get("source", "qdrant")),
         title=title,
-        document_type=DocumentType.CASE_LAW if payload.get("case_id") else DocumentType.OTHER,
+        document_type=DocumentType.CASE_LAW if is_judgment else DocumentType.OTHER,
         jurisdiction=str(payload.get("jurisdiction", "IN")),
         act=payload.get("code"),
         section=str(payload["section"]) if payload.get("section") is not None else None,
+        unit_kind="paragraph" if paragraph is not None else None,
+        section_heading=payload.get("section_heading") or None,
         paragraph=int(paragraph) if isinstance(paragraph, (int, float, str)) and str(paragraph).isdigit() else None,
+        page_number=int(page) if isinstance(page, (int, float)) else None,
         case_name=payload.get("case_name"),
         case_citation=payload.get("citation"),
         court=payload.get("court"),
         decision_date=str(decision_date)[:10] if decision_date else None,
+        opinion_type=payload.get("opinion_type") or None,
+        opinion_author=payload.get("opinion_author") or None,
+        cite_as=payload.get("cite_as") or None,
+        parent_chunk_id=payload.get("parent_id") or None,
         chunking_strategy="external",
         chunk_profile="external",
         chunk_size=0,
         overlap=0,
-        token_count=len(content.split()),
+        token_count=int(tokens) if isinstance(tokens, (int, float)) else len(content.split()),
         chunk_index=int(paragraph) if isinstance(paragraph, int) else 0,
         char_start=0,
         char_end=len(content),
         content_hash=sha256(content),
         created_at=datetime(1970, 1, 1, tzinfo=UTC),
     )
-    return Chunk(content=content, metadata=meta)
+    return Chunk(content=content, context_header=str(payload.get("context") or ""), metadata=meta)
 
 
 def build_filter(filters: RetrievalFilters | None) -> models.Filter | None:
@@ -99,9 +110,30 @@ def build_filter(filters: RetrievalFilters | None) -> models.Filter | None:
             must.append(models.FieldCondition(key=key, match=models.MatchAny(any=list(values))))
 
     any_of("document_id", filters.document_ids)
-    any_of("document_type", filters.document_types)
-    any_of("act", filters.acts)
-    any_of("section", filters.sections)
+    if filters.document_types:
+        # Our payloads use document_type ("case_law", ...); the data-layer payloads use
+        # doc_type ("judgment", ...). Accept either spelling of the same meaning.
+        external = ["judgment" if t == "case_law" else t for t in filters.document_types]
+        must.append(models.Filter(should=[
+            models.FieldCondition(key="document_type", match=models.MatchAny(any=list(filters.document_types))),
+            models.FieldCondition(key="doc_type", match=models.MatchAny(any=external)),
+        ]))
+    if filters.acts and filters.sections:
+        # A named provision must match either our statute payloads (act + section fields) or the
+        # data-layer judgment payloads, which tag chunks with "ACT:SECTION" keys in statutes /
+        # statutes_current (e.g. "IPC:497"). One nested should-clause keeps both schemas working.
+        keys = [f"{act}:{section}" for act in filters.acts for section in filters.sections]
+        must.append(models.Filter(should=[
+            models.Filter(must=[
+                models.FieldCondition(key="act", match=models.MatchAny(any=list(filters.acts))),
+                models.FieldCondition(key="section", match=models.MatchAny(any=list(filters.sections))),
+            ]),
+            models.FieldCondition(key="statutes", match=models.MatchAny(any=keys)),
+            models.FieldCondition(key="statutes_current", match=models.MatchAny(any=keys)),
+        ]))
+    else:
+        any_of("act", filters.acts)
+        any_of("section", filters.sections)
     any_of("chunk_profile", filters.chunk_profiles)
     any_of("court", filters.courts)
     if filters.decided_after or filters.decided_before:
@@ -160,6 +192,19 @@ class QdrantVectorStore:
         self._allow_create = allow_create
         self._max_retries = max_retries
         self.sparse_enabled = bool(sparse_vector_name)
+        #: An unnamed dense vector means the collection was created and is owned by the data
+        #: layer. Its payloads have no chunk_profile / is_latest keys, so those internal filters
+        #: must not be sent (Qdrant Cloud rejects filters on unindexed keys, and even indexed
+        #: they would match nothing).
+        self.external_schema = not dense_vector_name
+        #: Set by validate_collection when the content field carries a full-text payload index.
+        #: It gives a keyword-retrieval leg on collections that hold no sparse vectors.
+        self.text_search_field: str | None = None
+
+    def _adapt(self, filters: RetrievalFilters | None) -> RetrievalFilters | None:
+        if filters is None or not self.external_schema:
+            return filters
+        return filters.model_copy(update={"chunk_profiles": None, "only_latest": False})
 
     def _open_local(self) -> None:
         """Open the embedded store; if another process holds its lock, record why (retried on next call)."""
@@ -259,7 +304,26 @@ class QdrantVectorStore:
                 extra={"collection": self.collection, "sparse_vector": self.sparse_name},
             )
             self.sparse_enabled = False
+        self._detect_text_index(info)
         return {"points": info.points_count, "status": str(info.status)}
+
+    def _detect_text_index(self, info: Any) -> None:
+        """Find a full-text payload index over the chunk body.
+
+        Without sparse vectors there is no keyword leg at all, and dense search alone blurs exact
+        statutory wording. A full-text index gives that leg back: Qdrant matches the tokens and we
+        rank the matches ourselves (the lexical reranker already scores term coverage).
+        """
+        schema = getattr(info, "payload_schema", None) or {}
+        for field in ("text", "content"):
+            entry = schema.get(field)
+            data_type = getattr(entry, "data_type", None)
+            if entry is not None and str(getattr(data_type, "value", data_type)).lower() == "text":
+                self.text_search_field = field
+                logger.info("full-text payload index found; keyword retrieval enabled",
+                            extra={"collection": self.collection, "field": field})
+                return
+        self.text_search_field = None
 
     # ----------------------------------------------------------------- writes
     async def upsert(
@@ -308,7 +372,7 @@ class QdrantVectorStore:
         response = await self._call(
             "query_dense",
             lambda: self._client.query_points(
-                self.collection, query=vector, using=self._dense_using, query_filter=build_filter(filters),
+                self.collection, query=vector, using=self._dense_using, query_filter=build_filter(self._adapt(filters)),
                 limit=limit, with_payload=True,
             ),
         )
@@ -324,23 +388,75 @@ class QdrantVectorStore:
             lambda: self._client.query_points(
                 self.collection,
                 query=models.SparseVector(indices=vector.indices, values=vector.values),
-                using=self.sparse_name, query_filter=build_filter(filters), limit=limit, with_payload=True,
+                using=self.sparse_name, query_filter=build_filter(self._adapt(filters)), limit=limit, with_payload=True,
             ),
         )
         return [(payload_to_chunk(str(p.id), p.payload or {}), float(p.score)) for p in response.points]
+
+    async def search_text(
+        self, terms: list[str], filters: RetrievalFilters | None, limit: int
+    ) -> list[Chunk]:
+        """Keyword retrieval over the full-text payload index.
+
+        Qdrant's text match is an AND over the tokens, which is precise but brittle for a long
+        question. We therefore start with the most distinctive terms and drop the weakest one at a
+        time until something matches, so an exact phrase like "gross negligence" wins when it is
+        present and the query still degrades gracefully when it is not.
+        """
+        if not self.text_search_field or not terms:
+            return []
+        # Longest first: in legal text the long tokens ("negligence", "adultery") carry the
+        # meaning, while short ones ("act", "law") match almost everything.
+        ranked = sorted(dict.fromkeys(terms), key=len, reverse=True)[:6]
+        base = build_filter(self._adapt(filters))
+
+        def with_terms(selected: list[str]) -> models.Filter:
+            conditions: list[models.Condition] = [
+                models.FieldCondition(key=self.text_search_field, match=models.MatchText(text=t)) for t in selected
+            ]
+            if base is None:
+                return models.Filter(must=conditions)
+            return models.Filter(must=[*(base.must or []), *conditions],
+                                 must_not=base.must_not, should=base.should)
+
+        async def run(query_filter: models.Filter, size: int) -> list[Any]:
+            points, _ = await self._call(
+                "scroll_text",
+                lambda f=query_filter, n=size: self._client.scroll(
+                    self.collection, scroll_filter=f, limit=n, with_payload=True, with_vectors=False
+                ),
+            )
+            return list(points)
+
+        # Every term present: precise, and the common case for a focused legal question.
+        points = await run(with_terms(ranked), limit)
+        if not points and len(ranked) > 1:
+            # One absent term (a typo, a party not in the corpus) must not sink the whole leg.
+            # Fall back to a per-term sweep, most distinctive first, so the pool is built from
+            # the rarest words rather than from whatever the index happens to return first.
+            seen: dict[str, Any] = {}
+            per_term = max(limit // 2, 10)
+            for term in ranked[:4]:
+                for point in await run(with_terms([term]), per_term):
+                    seen.setdefault(str(point.id), point)
+                if len(seen) >= limit:
+                    break
+            points = list(seen.values())[:limit]
+        return [payload_to_chunk(str(p.id), p.payload or {}) for p in points]
 
     async def scroll(self, filters: RetrievalFilters | None, limit: int) -> list[Chunk]:
         points, _ = await self._call(
             "scroll",
             lambda: self._client.scroll(
-                self.collection, scroll_filter=build_filter(filters), limit=limit, with_payload=True, with_vectors=False
+                self.collection, scroll_filter=build_filter(self._adapt(filters)), limit=limit,
+                with_payload=True, with_vectors=False,
             ),
         )
         return [payload_to_chunk(str(p.id), p.payload or {}) for p in points]
 
     async def count(self, filters: RetrievalFilters | None = None) -> int:
         result = await self._call(
-            "count", lambda: self._client.count(self.collection, count_filter=build_filter(filters), exact=True)
+            "count", lambda: self._client.count(self.collection, count_filter=build_filter(self._adapt(filters)), exact=True)
         )
         return int(result.count)
 

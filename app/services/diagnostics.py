@@ -36,7 +36,8 @@ def _ms(start: float) -> float:
 async def check_qdrant(c: Container) -> QdrantDiagnostics:
     start = time.perf_counter()
     base = {"mode": c.store.mode, "target": c.store.target, "collection": c.store.collection,
-            "expected_dimension": c.settings.embedding_dimension, "sparse_enabled": c.store.sparse_enabled}
+            "expected_dimension": c.settings.embedding_dimension, "sparse_enabled": c.store.sparse_enabled,
+            "text_search_field": c.store.text_search_field}
     try:
         info = await c.store.describe_collection()
     except AppError as exc:

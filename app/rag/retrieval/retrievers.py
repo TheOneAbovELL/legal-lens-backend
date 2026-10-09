@@ -6,9 +6,10 @@ from __future__ import annotations
 import uuid
 from datetime import UTC, datetime
 
+from app.core.logging import get_logger
 from app.core.text import count_tokens, sha256
 from app.domain.acts import act_display_name
-from app.domain.chunks import CHUNK_NAMESPACE, ChunkMetadata
+from app.domain.chunks import CHUNK_NAMESPACE, Chunk, ChunkMetadata
 from app.domain.documents import DocumentType
 from app.domain.retrieval import RetrievalFilters, RetrievedChunk
 from app.providers.embeddings.base import EmbeddingProvider
@@ -16,7 +17,9 @@ from app.providers.graph_db.neo4j_client import Neo4jClient
 from app.providers.vector_store.qdrant_store import QdrantVectorStore
 from app.rag.query.entities import provision_refs
 from app.rag.retrieval.base import RetrievalQuery, Retriever, to_retrieved
-from app.rag.sparse import SparseEncoder
+from app.rag.sparse import SparseEncoder, lexical_terms
+
+logger = get_logger(__name__)
 
 
 class DenseRetriever(Retriever):
@@ -42,6 +45,50 @@ class SparseRetriever(Retriever):
     async def retrieve(self, query: RetrievalQuery, filters: RetrievalFilters | None, top_k: int) -> list[RetrievedChunk]:
         hits = await self._store.search_sparse(self._encoder.encode_query(query.text), filters, top_k)
         return [to_retrieved(c, self.name, s, i + 1, query.subquery_id) for i, (c, s) in enumerate(hits)]
+
+
+class TextMatchRetriever(Retriever):
+    """Keyword retrieval over a full-text payload index.
+
+    Collections loaded by the data layer carry no sparse vectors, which would leave the pipeline
+    with no keyword leg at all. This restores one: Qdrant finds the chunks containing the query's
+    distinctive terms and we order them by how much of the query each one actually covers.
+    """
+
+    name = "lexical"
+
+    def __init__(self, store: QdrantVectorStore, candidate_multiplier: int = 4,
+                 min_coverage: float = 0.5) -> None:
+        self._store = store
+        self._multiplier = candidate_multiplier
+        #: When the all-terms match finds nothing the store sweeps term by term, which can surface
+        #: passages sharing only one common word. Requiring half the query's terms keeps that
+        #: noise out of the fused ranking instead of letting it compete with real dense hits.
+        self._min_coverage = min_coverage
+
+    async def retrieve(self, query: RetrievalQuery, filters: RetrievalFilters | None, top_k: int) -> list[RetrievedChunk]:
+        if not self._store.text_search_field:
+            return []
+        terms = lexical_terms(query.text)
+        if not terms:
+            return []
+        # Over-fetch: the store returns matches in index order, so the ranking below needs a pool.
+        chunks = await self._store.search_text(terms, filters, top_k * self._multiplier)
+        wanted = set(terms)
+        scored: list[tuple[float, Chunk]] = []
+        for chunk in chunks:
+            present = set(lexical_terms(f"{chunk.context_header} {chunk.content}"))
+            coverage = len(wanted & present) / len(wanted)
+            if coverage < self._min_coverage:
+                continue
+            # Prefer the shorter passage when coverage ties: the same terms in fewer words is the
+            # more focused answer, and it costs less of the context budget.
+            scored.append((coverage - 0.001 * min(chunk.metadata.token_count, 500) / 500, chunk))
+        scored.sort(key=lambda pair: pair[0], reverse=True)
+        return [
+            to_retrieved(chunk, self.name, round(score, 6), rank, query.subquery_id)
+            for rank, (score, chunk) in enumerate(scored[:top_k], start=1)
+        ]
 
 
 class MetadataRetriever(Retriever):
@@ -84,11 +131,26 @@ class GraphRetriever(Retriever):
         if not refs:
             return []
         rows = await self._client.statutes(refs, limit=top_k)
+        cases_by_ref: dict[tuple[str, str], list[dict]] = {}
+        try:
+            for row in await self._client.interpreting_cases(refs):
+                cases_by_ref[(str(row.get("code") or "").upper(), str(row.get("section") or ""))] = row.get("cases") or []
+        except Exception as exc:  # noqa: BLE001 - enrichment only; statutes alone are still useful
+            logger.debug("interpreting-cases lookup skipped", extra={"error_type": type(exc).__name__})
         results = []
         for rank, row in enumerate(rows, start=1):
             code, section = str(row.get("code") or "").upper(), str(row.get("section") or "")
             title = row.get("title") or ""
             content = row.get("text") or f"{act_display_name(code)} Section {section}: {title}".strip()
+            cases = [c for c in cases_by_ref.get((code, section), []) if c.get("name")]
+            if cases:
+                lines = []
+                for c in cases:
+                    cite = f" , {c['citation']}" if c.get("citation") else ""
+                    when = f" ({str(c['date'])[:4]})" if c.get("date") else ""
+                    flag = " [overruled]" if c.get("overruled") else ""
+                    lines.append(f"- {c['name']}{cite.replace(' ,', ',')}{when}{flag}")
+                content += "\nCases interpreting this provision (from the knowledge graph):\n" + "\n".join(lines)
             chunk_id = str(uuid.uuid5(CHUNK_NAMESPACE, f"neo4j|{code}|{section}"))
             meta = ChunkMetadata(
                 chunk_id=chunk_id,

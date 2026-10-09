@@ -30,13 +30,22 @@ def _tokens(chunk: RetrievedChunk) -> int:
 def _group_key(chunk: RetrievedChunk) -> tuple[str, str]:
     md = chunk.metadata
     unit = md.section or (f"para-{md.paragraph}" if md.unit_kind == "paragraph" and md.paragraph else "")
+    # Judgments number paragraphs per opinion, so "para 12" of the majority and "para 12" of a
+    # dissent are different passages. Keeping the opinion in the key stops them being presented
+    # as one unit, which would blur which judge said what.
+    opinion = md.opinion_author or md.opinion_type or ""
     title = md.title
     if md.section:
         label = "Article" if md.unit_kind == "article" else "Section"
         title = f"{md.title} — {label} {md.section}" + (f" ({md.section_heading})" if md.section_heading else "")
     elif md.case_name:
         title = md.case_name
-    return f"{md.document_id}|{md.document_version}|{unit}", title
+        if md.opinion_type and md.opinion_type not in ("majority", "unanimous"):
+            who = f" of {md.opinion_author}" if md.opinion_author else ""
+            title = f"{md.case_name} — {md.opinion_type} opinion{who}"
+        elif md.opinion_author:
+            title = f"{md.case_name} — per {md.opinion_author}"
+    return f"{md.document_id}|{md.document_version}|{opinion}|{unit}", title
 
 
 class _Selection:
@@ -197,6 +206,13 @@ def render_context(context: BuiltContext) -> str:
         for item in group.items:
             md = item.chunk.metadata
             where = [f"source: {md.source}"]
+            if md.cite_as:
+                where.append(f"cite as: {md.cite_as}")
+            elif md.case_citation:
+                where.append(md.case_citation)
+            if md.opinion_type and md.opinion_type not in ("majority", "unanimous"):
+                author = f" of {md.opinion_author}" if md.opinion_author else ""
+                where.append(f"{md.opinion_type} opinion{author}, not the court's holding")
             if md.page_number:
                 where.append(f"page {md.page_number}")
             if md.subsection:
