@@ -107,12 +107,15 @@ def build_diagnostics(state: PipelineState, latency_ms: float) -> RetrievalDiagn
     attempted = state.profile.sources if state.profile and state.retrieval_results is not None and "retrieval" in t else []
     errors = {e.message.split(":", 1)[0]: e.message.split(":", 1)[-1].strip()
               for e in state.errors if e.stage == "retrieval"}
+    # The four canonical sources are always reported (clients rely on the keys); any further
+    # source that actually ran is added, so diagnostics never hide a leg that produced evidence.
+    names = dict.fromkeys(["dense", "sparse", "metadata", "graph", *attempted, *state.retrieval_source_counts])
     sources = {
         name: SourceDiagnostics(
             executed=name in attempted, hits=state.retrieval_source_counts.get(name, 0),
             latency_ms=t.get(f"retrieval.{name}"), error=errors.get(name),
         )
-        for name in ("dense", "sparse", "metadata", "graph")
+        for name in names
     }
     succeeded = [n for n, s in sources.items() if s.executed and not s.error]
     mode = "hybrid" if len(succeeded) > 1 else (succeeded[0] if succeeded else "none")

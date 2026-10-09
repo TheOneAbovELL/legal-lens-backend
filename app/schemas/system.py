@@ -60,6 +60,9 @@ class QdrantDiagnostics(BaseModel):
     distance: str | None = None
     sparse_vector: str | None = None
     sparse_enabled: bool
+    text_search_field: str | None = Field(
+        default=None, description="Payload field with a full-text index; enables the keyword ('lexical') source"
+    )
     indexed_chunk_profiles: list[str] | None = None
     test_query_ok: bool | None = Field(default=None, description="Read-only dense query with a probe vector")
     test_query_hits: int | None = None

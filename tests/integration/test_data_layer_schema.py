@@ -151,6 +151,126 @@ class TestGraphCaseEnrichment:
         assert "Cases interpreting" not in results[0].content
 
 
+class _StubTextStore:
+    """Mimics the store's text search: AND over terms, relaxing the least distinctive one."""
+
+    text_search_field = "text"
+
+    def __init__(self, corpus: dict[str, str]):
+        self.corpus = corpus
+        self.queries: list[list[str]] = []
+
+    async def search_text(self, terms, filters, limit):
+        """All-terms first, then a per-term sweep - the same contract as the real store."""
+        from app.providers.vector_store.qdrant_store import payload_to_chunk
+
+        def matching(selected):
+            return [cid for cid, text in self.corpus.items() if all(t in text.lower() for t in selected)]
+
+        ranked = sorted(dict.fromkeys(terms), key=len, reverse=True)[:6]
+        self.queries.append(list(ranked))
+        hits = matching(ranked)
+        if not hits and len(ranked) > 1:
+            seen = {}
+            for term in ranked[:4]:
+                self.queries.append([term])
+                for cid in matching([term]):
+                    seen.setdefault(cid, None)
+            hits = list(seen)
+        return [payload_to_chunk(cid, {"chunk_id": cid, "text": self.corpus[cid], "case_id": "c",
+                                       "case_name": "Case", "doc_type": "judgment"})
+                for cid in hits[:limit]]
+
+
+class TestTextMatchRetriever:
+    """The keyword leg that replaces sparse vectors on a collection that has none."""
+
+    @pytest.mark.asyncio
+    async def test_ranks_by_query_term_coverage(self):
+        from app.rag.retrieval.retrievers import TextMatchRetriever
+
+        store = _StubTextStore({
+            "full": "gross negligence by a medical practitioner is the standard",
+            "partial": "negligence generally considered in other contexts entirely",
+        })
+        results = await TextMatchRetriever(store).retrieve(
+            RetrievalQuery(text="gross negligence medical practitioner"), None, 5)
+        # The all-terms query is precise: only the passage carrying every term comes back.
+        assert [r.chunk_id for r in results] == ["full"]
+        assert results[0].scores["lexical"] > 0.9 and results[0].ranks["lexical"] == 1
+
+    @pytest.mark.asyncio
+    async def test_coverage_floor_drops_single_word_noise(self):
+        """The per-term sweep can surface a passage sharing one common word; it must not rank."""
+        from app.rag.retrieval.retrievers import TextMatchRetriever
+
+        store = _StubTextStore({
+            "most": "negligence by a medical practitioner",          # 3 of 4 terms
+            "least": "negligence in an unrelated commercial dispute",  # 1 of 4 terms
+        })
+        query = RetrievalQuery(text="negligence medical practitioner absentterm")
+        results = await TextMatchRetriever(store).retrieve(query, None, 5)
+        assert [r.chunk_id for r in results] == ["most"]
+        # Lowering the floor lets the weak match back in, so the floor is what excluded it.
+        relaxed = await TextMatchRetriever(store, min_coverage=0.0).retrieve(query, None, 5)
+        assert [r.chunk_id for r in relaxed] == ["most", "least"]
+        assert relaxed[0].scores["lexical"] > relaxed[1].scores["lexical"]
+
+    @pytest.mark.asyncio
+    async def test_relaxes_the_least_distinctive_term_until_something_matches(self):
+        from app.rag.retrieval.retrievers import TextMatchRetriever
+
+        store = _StubTextStore({"a": "adultery and the constitutional validity of the provision"})
+        results = await TextMatchRetriever(store).retrieve(
+            RetrievalQuery(text="adultery constitutional unavailableword"), None, 5)
+        assert [r.chunk_id for r in results] == ["a"]
+        # Every term was tried together first, then each term on its own.
+        assert store.queries[0] == ["unavailableword", "constitutional", "adultery"]
+        assert ["adultery"] in store.queries
+
+    @pytest.mark.asyncio
+    async def test_inert_without_a_full_text_index(self):
+        from app.rag.retrieval.retrievers import TextMatchRetriever
+
+        store = _StubTextStore({"a": "anything"})
+        store.text_search_field = None
+        assert await TextMatchRetriever(store).retrieve(RetrievalQuery(text="anything"), None, 5) == []
+
+
+class TestOpinionAwareGrouping:
+    """Paragraph numbers restart per opinion: two judges' "para 12" are different passages."""
+
+    @staticmethod
+    def _chunk(author: str, opinion: str, paragraph: int):
+        from app.rag.fusion import _group_key
+
+        payload = dict(JUDGMENT_PAYLOAD, opinion_author=author, opinion_type=opinion,
+                       paragraph_num=paragraph, text=f"text by {author}")
+        chunk = payload_to_chunk(f"{author}-{paragraph}", payload)
+        return _group_key(RetrievedChunk(chunk_id=chunk.chunk_id, content=chunk.content,
+                                         context_header="", metadata=chunk.metadata,
+                                         scores={}, ranks={}, subquery_ids=["q0"]))
+
+    def test_same_paragraph_of_different_opinions_does_not_merge(self):
+        malhotra = self._chunk("Indu Malhotra", "concurring", 12)
+        nariman = self._chunk("R.F. Nariman", "concurring", 12)
+        assert malhotra[0] != nariman[0]
+        assert "Indu Malhotra" in malhotra[1] and "R.F. Nariman" in nariman[1]
+
+    def test_same_opinion_and_paragraph_still_group(self):
+        first = self._chunk("Indu Malhotra", "concurring", 12)
+        second = self._chunk("Indu Malhotra", "concurring", 12)
+        assert first[0] == second[0]
+
+    def test_dissent_is_labelled_in_the_group_title(self):
+        _, title = self._chunk("D.Y. Chandrachud", "dissenting", 7)
+        assert "dissenting opinion of D.Y. Chandrachud" in title
+
+    def test_majority_reads_as_per_the_author(self):
+        _, title = self._chunk("Dipak Misra", "majority", 7)
+        assert title.endswith("per Dipak Misra") and "majority opinion" not in title
+
+
 class TestNeo4jSettings:
     def test_username_alias_and_database(self, monkeypatch):
         monkeypatch.setenv("NEO4J_USERNAME", "aura-user")
@@ -158,6 +278,19 @@ class TestNeo4jSettings:
         s = Settings(_env_file=None)
         assert s.neo4j_user == "aura-user"
         assert s.neo4j_database == "aura-db"
+
+    def test_production_refuses_the_certificate_skipping_scheme(self, monkeypatch):
+        import pytest as _pytest
+
+        for key, value in {
+            "APP_ENV": "production", "JWT_SECRET_KEY": "x" * 40, "CORS_ORIGINS": "https://legal-lens.example",
+            "NEO4J_URI": "neo4j+ssc://abc.databases.neo4j.io",
+        }.items():
+            monkeypatch.setenv(key, value)
+        with _pytest.raises(ValueError, match="certificate verification"):
+            Settings(_env_file=None)
+        monkeypatch.setenv("NEO4J_URI", "neo4j+s://abc.databases.neo4j.io")
+        assert Settings(_env_file=None).neo4j_uri.startswith("neo4j+s://")
 
     def test_neo4j_user_still_works(self, monkeypatch):
         monkeypatch.delenv("NEO4J_USERNAME", raising=False)

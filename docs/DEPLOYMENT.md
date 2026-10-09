@@ -69,6 +69,8 @@ and a Neo4j Aura graph (`Case`/`Statute`/`Judge` nodes; `CITES`, `INTERPRETS`, `
 3. Set `NEO4J_URI`, `NEO4J_USER` (alias `NEO4J_USERNAME`), `NEO4J_PASSWORD` and `NEO4J_DATABASE`
    from the Aura console. Named provisions then retrieve statute nodes enriched with the cases
    that interpret them, and provision mappings are cross-checked against `REPLACED_BY` edges.
+   Use `neo4j+s://`. The `neo4j+ssc://` scheme accepts any certificate and is a local workaround
+   for a missing CA bundle; `APP_ENV=production` refuses it.
 4. Never ingest into the shared collection: `scripts/ingest.py` refuses external-schema targets,
    and `QDRANT_CREATE_COLLECTION=false` keeps the backend from creating or altering collections
    it does not own.
@@ -76,6 +78,26 @@ and a Neo4j Aura graph (`Case`/`Statute`/`Judge` nodes; `CITES`, `INTERPRETS`, `
 Aura free instances pause when idle and can refuse routing intermittently after resume; the
 circuit breaker turns that into one warning per cooldown window while retrieval continues
 without the graph.
+
+### Keeping a keyword leg without sparse vectors
+
+The data-layer collection holds dense vectors only, so the BM25-style `sparse` source returns
+nothing there and hybrid retrieval would quietly collapse to dense + exact-provision lookup. The
+`lexical` source fills that gap wherever the collection carries a **full-text payload index** over
+its body field (`text` or `content`): Qdrant matches the query's distinctive terms and the
+retriever ranks the matches by how much of the query each passage covers.
+
+* All terms are required first (precise); if nothing matches, the store sweeps term by term from
+  the rarest word down, so one absent term — a typo, a party not in the corpus — cannot sink the
+  whole leg.
+* Matches covering less than half the query's terms are dropped, keeping single-common-word noise
+  out of the fused ranking.
+* The source is inert when no full-text index exists, so collections with real sparse vectors are
+  unaffected. `GET /ready` and the per-request diagnostics report `lexical` hits alongside
+  `dense`, `sparse`, `metadata` and `graph`, so you can see which legs actually ran.
+
+Measured on the live judgment collection, `lexical` contributed 14 passages that dense retrieval
+alone did not return across five representative queries.
 
 ## Migrating from the previous backend
 

@@ -205,6 +205,13 @@ class Settings(BaseSettings):
                 raise ValueError("JWT_SECRET_KEY of at least 32 characters is required in production")
             if "*" in self.cors_origins:
                 raise ValueError("Wildcard CORS origins are not allowed in production")
+            # "+ssc" accepts any certificate, so a man in the middle could read graph traffic.
+            # It is a local workaround for a missing CA bundle, never a production setting.
+            if self.neo4j_uri and "+ssc" in self.neo4j_uri.split("://", 1)[0]:
+                raise ValueError(
+                    "NEO4J_URI uses the self-signed scheme (+ssc), which skips certificate "
+                    "verification; use neo4j+s:// in production"
+                )
         if not self.qdrant_url and not self.qdrant_path:
             # Embedded local store keeps development usable without a server.
             self.qdrant_path = (self.data_dir / "qdrant").as_posix()

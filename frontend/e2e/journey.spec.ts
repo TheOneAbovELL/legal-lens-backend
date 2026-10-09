@@ -124,7 +124,11 @@ test("TEST 4 — complex query → backend-driven research status → final answ
   const status = page.getByTestId("status-row");
   const assistant = page.getByTestId("assistant-message").last();
   await expect.poll(async () => (await status.count()) > 0 || (await assistant.getAttribute("data-status")) === "complete", { timeout: 30_000 }).toBe(true);
-  if ((await status.count()) > 0) await expect(status).not.toContainText(/system prompt|reasoning/i);
+  // Read the row's text once rather than asserting against a live locator: the stream can finish
+  // and unmount the row between the check and the assertion, which fails on a missing element
+  // instead of on leaked reasoning. A snapshot keeps the guarantee without the race.
+  const statusText = (await status.count()) > 0 ? await status.first().textContent().catch(() => null) : null;
+  if (statusText) expect(statusText).not.toMatch(/system prompt|reasoning/i);
   await expect(assistant).toHaveAttribute("data-status", "complete", { timeout: 30_000 });
   await expect(assistant).not.toContainText(/system prompt|chain of thought/i);
   await expect(assistant.getByText("Multi-aspect research")).toBeVisible();

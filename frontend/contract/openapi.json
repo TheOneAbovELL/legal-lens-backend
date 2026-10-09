@@ -2276,6 +2276,18 @@
             "description": "Read-only dense query with a probe vector",
             "title": "Test Query Ok"
           },
+          "text_search_field": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Payload field with a full-text index; enables the keyword ('lexical') source",
+            "title": "Text Search Field"
+          },
           "vector_dimension": {
             "anyOf": [
               {

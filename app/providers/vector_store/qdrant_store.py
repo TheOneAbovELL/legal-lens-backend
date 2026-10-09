@@ -197,6 +197,9 @@ class QdrantVectorStore:
         #: must not be sent (Qdrant Cloud rejects filters on unindexed keys, and even indexed
         #: they would match nothing).
         self.external_schema = not dense_vector_name
+        #: Set by validate_collection when the content field carries a full-text payload index.
+        #: It gives a keyword-retrieval leg on collections that hold no sparse vectors.
+        self.text_search_field: str | None = None
 
     def _adapt(self, filters: RetrievalFilters | None) -> RetrievalFilters | None:
         if filters is None or not self.external_schema:
@@ -301,7 +304,26 @@ class QdrantVectorStore:
                 extra={"collection": self.collection, "sparse_vector": self.sparse_name},
             )
             self.sparse_enabled = False
+        self._detect_text_index(info)
         return {"points": info.points_count, "status": str(info.status)}
+
+    def _detect_text_index(self, info: Any) -> None:
+        """Find a full-text payload index over the chunk body.
+
+        Without sparse vectors there is no keyword leg at all, and dense search alone blurs exact
+        statutory wording. A full-text index gives that leg back: Qdrant matches the tokens and we
+        rank the matches ourselves (the lexical reranker already scores term coverage).
+        """
+        schema = getattr(info, "payload_schema", None) or {}
+        for field in ("text", "content"):
+            entry = schema.get(field)
+            data_type = getattr(entry, "data_type", None)
+            if entry is not None and str(getattr(data_type, "value", data_type)).lower() == "text":
+                self.text_search_field = field
+                logger.info("full-text payload index found; keyword retrieval enabled",
+                            extra={"collection": self.collection, "field": field})
+                return
+        self.text_search_field = None
 
     # ----------------------------------------------------------------- writes
     async def upsert(
@@ -370,6 +392,57 @@ class QdrantVectorStore:
             ),
         )
         return [(payload_to_chunk(str(p.id), p.payload or {}), float(p.score)) for p in response.points]
+
+    async def search_text(
+        self, terms: list[str], filters: RetrievalFilters | None, limit: int
+    ) -> list[Chunk]:
+        """Keyword retrieval over the full-text payload index.
+
+        Qdrant's text match is an AND over the tokens, which is precise but brittle for a long
+        question. We therefore start with the most distinctive terms and drop the weakest one at a
+        time until something matches, so an exact phrase like "gross negligence" wins when it is
+        present and the query still degrades gracefully when it is not.
+        """
+        if not self.text_search_field or not terms:
+            return []
+        # Longest first: in legal text the long tokens ("negligence", "adultery") carry the
+        # meaning, while short ones ("act", "law") match almost everything.
+        ranked = sorted(dict.fromkeys(terms), key=len, reverse=True)[:6]
+        base = build_filter(self._adapt(filters))
+
+        def with_terms(selected: list[str]) -> models.Filter:
+            conditions: list[models.Condition] = [
+                models.FieldCondition(key=self.text_search_field, match=models.MatchText(text=t)) for t in selected
+            ]
+            if base is None:
+                return models.Filter(must=conditions)
+            return models.Filter(must=[*(base.must or []), *conditions],
+                                 must_not=base.must_not, should=base.should)
+
+        async def run(query_filter: models.Filter, size: int) -> list[Any]:
+            points, _ = await self._call(
+                "scroll_text",
+                lambda f=query_filter, n=size: self._client.scroll(
+                    self.collection, scroll_filter=f, limit=n, with_payload=True, with_vectors=False
+                ),
+            )
+            return list(points)
+
+        # Every term present: precise, and the common case for a focused legal question.
+        points = await run(with_terms(ranked), limit)
+        if not points and len(ranked) > 1:
+            # One absent term (a typo, a party not in the corpus) must not sink the whole leg.
+            # Fall back to a per-term sweep, most distinctive first, so the pool is built from
+            # the rarest words rather than from whatever the index happens to return first.
+            seen: dict[str, Any] = {}
+            per_term = max(limit // 2, 10)
+            for term in ranked[:4]:
+                for point in await run(with_terms([term]), per_term):
+                    seen.setdefault(str(point.id), point)
+                if len(seen) >= limit:
+                    break
+            points = list(seen.values())[:limit]
+        return [payload_to_chunk(str(p.id), p.payload or {}) for p in points]
 
     async def scroll(self, filters: RetrievalFilters | None, limit: int) -> list[Chunk]:
         points, _ = await self._call(
