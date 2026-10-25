@@ -16,7 +16,7 @@ langgraph==1.0.7
 # ---- retrieval / ML ----
 qdrant-client==1.16.2
 sentence-transformers==5.2.0
-transformers==4.57.3
+transformers==5.17.0
 torch==2.9.1
 numpy==2.4.6  # 2.4.0 was yanked upstream
 
